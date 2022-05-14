@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inset_box_shadow/flutter_inset_box_shadow.dart';
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter_tts/flutter_tts_web.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
@@ -23,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'package:transalin/classes/feature.dart';
 import 'package:transalin/classes/features.dart';
 import 'package:transalin/constants/app_language.dart';
+import 'package:transalin/providers/change_script_listener.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 import 'package:transalin/widgets/language_bar.dart';
@@ -52,12 +52,12 @@ class OutputScreenState extends State<OutputScreen> {
   late String langTargetTag;
   late String speechSourceTag;
   late String speechTargetTag;
-  bool hasRecognized = false;
-  bool hasTranslated = false;
+  late bool hasRecognized;
+  late bool hasTranslated;
   late RecognisedText inputText;
-  String recognizedText = '';
-  String translatedText = '';
-  String romanizedText = '';
+  late String recognizedText;
+  late String translatedText;
+  late String romanizedText;
   late List<Offset>? cornerPoints;
   late Image image;
   late InputImage inputImage;
@@ -66,23 +66,16 @@ class OutputScreenState extends State<OutputScreen> {
 
   late int imageWidth;
   late int imageHeight;
-  bool showOverlay = true;
-  bool showRomanized = false;
-  bool showAudioOptions = false;
-  bool playAudio = false;
-  GlobalKey globalKey = GlobalKey();
-  bool startDisplay = true;
+  late bool showOverlay;
+  late bool showRomanized;
+  late bool showVolumeSign;
+  late bool playAudio;
   late String copiedText;
   late String textLabel;
+  GlobalKey globalKey = GlobalKey();
   final FlutterTts flutterTts = FlutterTts();
-  TtsState ttsState = TtsState.stopped;
-  get isTtsPlaying => ttsState == TtsState.playing;
-  get isTtsStopped => ttsState == TtsState.stopped;
-  get isTtsPaused => ttsState == TtsState.paused;
-  get isTtsContinued => ttsState == TtsState.continued;
-
   FToast ftoast = FToast();
-
+  late bool withRomanization;
   AppBar appBar = AppBar(
       title: const Text('TranSalin'),
       centerTitle: true,
@@ -108,87 +101,98 @@ class OutputScreenState extends State<OutputScreen> {
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
         .then((image) => uiImage = image);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      withRomanization = context.watch<ChangeScriptListener>().withRomanization;
+    });
+    flutterTts.setStartHandler(() {
+      ///This is called when the audio starts
+      setState(() => showVolumeSign = true);
+    });
+
+    flutterTts.setCompletionHandler(() {
+      ///This is called when the audio ends
+      setState(() {
+        showVolumeSign = false;
+        playAudio = false;
+      });
+    });
+    getResults().then((_) {
+      showModalBottomSheet(
+          backgroundColor: Colors.transparent,
+          context: context,
+          builder: (builder) => featureMenu(context));
+    });
+  }
+
+  getResults() async {
+    hasRecognized = false;
+    hasTranslated = false;
     langSourceTag = getLangTag(0);
     langTargetTag = getLangTag(1);
     speechSourceTag = getSpeechTag(langSourceTag);
     speechTargetTag = getSpeechTag(langTargetTag);
     translatedTextList.clear();
     romanizedTextList.clear();
-    flutterTts.setStartHandler(() {
-      setState(() => ttsState = TtsState.playing);
-
-      ///This is called when the audio starts
+    recognizedText = '';
+    translatedText = '';
+    romanizedText = '';
+    showOverlay = true;
+    showRomanized = false;
+    showVolumeSign = false;
+    playAudio = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context
+          .read<ChangeScriptListener>()
+          .change(langTargetTag == AppLanguage.zh);
     });
+    // context
+    //     .read<ChangeScriptListener>()
+    //     .change(langTargetTag == AppLanguage.zh);
+    final textRecognizer = GoogleMlKit.vision.textDetectorV2();
+    // inputText = await textRecognizer.processImage(inputImage,
+    //     script: TextRecognitionOptions.CHINESE);
+    inputText = await textRecognizer.processImage(inputImage,
+        script: TextRecognitionOptions.CHINESE);
+    await textRecognizer.close();
 
-    flutterTts.setPauseHandler(() {
-      setState(() => ttsState = TtsState.paused);
-    });
+    setState(() => hasRecognized = true);
 
-    flutterTts.setCancelHandler(() {
-      setState(() => ttsState = TtsState.stopped);
-    });
+    String lineText;
+    String outputText;
+    String convertedText;
 
-    flutterTts.setCompletionHandler(() {
-      ///This is called when the audio ends
-      setState(() {
-        ttsState = TtsState.stopped;
-        playAudio = false;
-      });
-    });
-    () async {
-      final textRecognizer = GoogleMlKit.vision.textDetectorV2();
-      // inputText = await textRecognizer.processImage(inputImage,
-      //     script: TextRecognitionOptions.CHINESE);
-      inputText = await textRecognizer.processImage(inputImage,
-          script: TextRecognitionOptions.CHINESE);
-      await textRecognizer.close();
+    //translate recognized text by block to assure a sound translation
+    for (TextBlock block in inputText.blocks) {
+      for (TextLine line in block.lines) {
+        lineText = line.text;
+        final OnDeviceTranslator translator = GoogleMlKit.nlp
+            .onDeviceTranslator(
+                sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
 
-      setState(() => hasRecognized = true);
+        outputText = await translator.translateText(lineText);
+        translator.close();
 
-      String lineText;
-      String outputText;
-      String convertedText;
-
-      //translate recognized text by block to assure a sound translation
-      for (TextBlock block in inputText.blocks) {
-        for (TextLine line in block.lines) {
-          lineText = line.text;
-          final OnDeviceTranslator translator = GoogleMlKit.nlp
-              .onDeviceTranslator(
-                  sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
-
-          outputText = await translator.translateText(lineText);
-          translator.close();
-
-          if (mounted) {
-            setState(() {
-              recognizedText += '$lineText ';
-              translatedText += '$outputText ';
-              convertedText = PinyinHelper.getPinyinE(lineText,
-                  separator: " ", format: PinyinFormat.WITH_TONE_MARK);
-              romanizedText += '$convertedText ';
-              translatedTextList.add(outputText);
-              romanizedTextList.add(convertedText);
-            });
-          }
-        }
         if (mounted) {
           setState(() {
-            recognizedText += '\n';
-            translatedText += '\n';
-            romanizedText += '\n';
+            recognizedText += '$lineText ';
+            translatedText += '$outputText ';
+            convertedText = PinyinHelper.getPinyinE(lineText,
+                separator: " ", format: PinyinFormat.WITH_TONE_MARK);
+            romanizedText += '$convertedText ';
+            translatedTextList.add(outputText);
+            romanizedTextList.add(convertedText);
           });
         }
       }
-      if (mounted) setState(() => hasTranslated = true);
-    }();
-
-    // Future.delayed(const Duration(seconds: 1)).then((_) {
-    //   showModalBottomSheet(
-    //       backgroundColor: Colors.transparent,
-    //       context: context,
-    //       builder: (builder) => featureMenu(context));
-    // });
+      if (mounted) {
+        setState(() {
+          recognizedText += '\n';
+          translatedText += '\n';
+          romanizedText += '\n';
+        });
+      }
+    }
+    if (mounted) setState(() => hasTranslated = true);
   }
 
   Future<ui.Image> convertToUIImage(File file) async {
@@ -200,7 +204,11 @@ class OutputScreenState extends State<OutputScreen> {
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
-
+    if (langSourceTag != context.watch<SourceLanguageChanger>().tag ||
+        langTargetTag != context.watch<TargetLanguageChanger>().tag) {
+      debugPrint('wew');
+      getResults();
+    }
     getImageDimensions();
     // recognizeText();
     // translateText();
@@ -211,7 +219,11 @@ class OutputScreenState extends State<OutputScreen> {
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
       body: Stack(children: [
-        if (playAudio) ...[showAudioOptions ? volumeSign() : loadingSign()],
+        !playAudio
+            ? Container()
+            : showVolumeSign
+                ? volumeSign()
+                : loadingSign(),
         !hasTranslated
             ? Stack(children: [
                 imageDisplay(),
@@ -307,7 +319,7 @@ class OutputScreenState extends State<OutputScreen> {
               child: Center(
                   child: Container(
                 height: 5.0,
-                width: 40.0,
+                width: 30.0,
                 decoration: BoxDecoration(
                     color: Colors.grey[350],
                     borderRadius: const BorderRadius.all(Radius.circular(5.0))),
@@ -323,10 +335,13 @@ class OutputScreenState extends State<OutputScreen> {
                 )),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: Features.features.length,
+              itemCount: withRomanization
+                  ? Features.features5.length
+                  : Features.features4.length,
               itemBuilder: (context, index) {
-                final feature = Features.features[index];
-
+                final feature = withRomanization
+                    ? Features.features5[index]
+                    : Features.features4[index];
                 return buildFeature(feature);
               },
             ),
@@ -356,7 +371,8 @@ class OutputScreenState extends State<OutputScreen> {
           width: 50,
           height: 50,
           alignment: Alignment.center,
-          margin: EdgeInsets.only(top: appBar.preferredSize.height),
+          margin:
+              EdgeInsets.only(top: appBar.preferredSize.height + 10, right: 10),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
@@ -366,30 +382,19 @@ class OutputScreenState extends State<OutputScreen> {
   Widget volumeSign() => Align(
       alignment: Alignment.topRight,
       child: Container(
-          width: screenWidth * 0.4,
+          width: 50,
           height: 50,
           alignment: Alignment.center,
-          margin: EdgeInsets.only(top: appBar.preferredSize.height),
+          margin:
+              EdgeInsets.only(top: appBar.preferredSize.height + 10, right: 10),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
-          child: Row(children: [
-            IconButton(
-                icon: const Icon(Icons.pause),
-                iconSize: 30,
-                color: Colors.white,
-                onPressed: () async {
-                  await flutterTts.pause();
-                  // _controller.setFlashMode(FlashMode.always);
-                })
-          ]
-              // const Icon(
-              // Icons.volume_up,
-              // size: 30,
-              // color: Colors.white,
-              // )
-
-              )));
+          child: const Icon(
+            Icons.volume_up,
+            size: 30,
+            color: Colors.white,
+          )));
 
   Widget buildFeature(Feature feat) => Container(
       padding: const EdgeInsets.all(10),
@@ -443,7 +448,7 @@ class OutputScreenState extends State<OutputScreen> {
                 });
               } else if (feat == Features.listen) {
                 setState(() => playAudio = true);
-                // debugPrint('weh $ttsState');
+                // debugPrint('weh $showVolumeSign');
                 // ftoast.init(context);
 
                 // ftoast.showToast(
@@ -467,7 +472,7 @@ class OutputScreenState extends State<OutputScreen> {
                     }
                   }
                 }();
-                // debugPrint('weh $ttsState');
+                // debugPrint('weh $showVolumeSign');
 
                 // ftoast.removeCustomToast();
               } else if (feat == Features.save) {

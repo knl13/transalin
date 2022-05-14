@@ -11,5 +11,6 @@ class Features {
   static const listen = Feature(icon: Icons.hearing, text: 'Listen to text');
   static const save = Feature(icon: Icons.save_alt, text: 'Save image');
 
-  static const List<Feature> features = [toggle, change, copy, listen, save];
+  static const List<Feature> features4 = [toggle, copy, listen, save];
+  static const List<Feature> features5 = [toggle, change, copy, listen, save];
 }
