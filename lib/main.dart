@@ -8,7 +8,6 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/constants/app_language.dart';
 import 'package:transalin/providers/camera_controller_listener.dart';
-import 'package:transalin/providers/change_script_listener.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 import 'package:transalin/screens/input_screen.dart';
@@ -75,7 +74,6 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => CameraControllerListener()),
-          ChangeNotifierProvider(create: (_) => ChangeScriptListener()),
           ChangeNotifierProvider(create: (_) => SourceLanguageChanger()),
           ChangeNotifierProvider(create: (_) => TargetLanguageChanger()),
         ],

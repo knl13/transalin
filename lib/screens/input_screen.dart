@@ -60,11 +60,16 @@ class InputScreenState extends State<InputScreen> {
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: const Text('TranSalin'),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
+            title: const Text('TranSalin',
+                style: TextStyle(shadows: [
+                  Shadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, 0))
+                ])),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0),
         // You must wait until the controller is initialized before displaying the
         // cameras preview. Use a FutureBuilder to display a loading spinner until the
         // controller has finished initializing.

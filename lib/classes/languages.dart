@@ -11,6 +11,6 @@ class Languages {
   static const korean = Language(
       icon: 'assets/images/southkorea_flag.png', text: AppLanguage.korean);
 
-  // static const List<Language> languages = [chinese, english, filipino];
-  static const List<Language> languages = [chinese, english, filipino, korean];
+  static const List<Language> languages = [chinese, english, filipino];
+  // static const List<Language> languages = [chinese, english, filipino, korean];
 }

@@ -22,7 +22,6 @@ import 'package:provider/provider.dart';
 import 'package:transalin/classes/feature.dart';
 import 'package:transalin/classes/features.dart';
 import 'package:transalin/constants/app_language.dart';
-import 'package:transalin/providers/change_script_listener.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 import 'package:transalin/widgets/language_bar.dart';
@@ -76,11 +75,19 @@ class OutputScreenState extends State<OutputScreen> {
   final FlutterTts flutterTts = FlutterTts();
   FToast ftoast = FToast();
   late bool withRomanization;
+
   AppBar appBar = AppBar(
-      title: const Text('TranSalin'),
-      centerTitle: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0);
+    title: const Text('TranSalin',
+        style: TextStyle(shadows: [
+          Shadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, 0))
+        ])),
+    centerTitle: true,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    leading: const Icon(Icons.arrow_back, color: Colors.white, shadows: [
+      Shadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, 0))
+    ]),
+  );
 
   void getImageDimensions() {
     final size = isg.ImageSizeGetter.getSize(
@@ -101,9 +108,7 @@ class OutputScreenState extends State<OutputScreen> {
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
         .then((image) => uiImage = image);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      withRomanization = context.watch<ChangeScriptListener>().withRomanization;
-    });
+
     flutterTts.setStartHandler(() {
       ///This is called when the audio starts
       setState(() => showVolumeSign = true);
@@ -118,6 +123,7 @@ class OutputScreenState extends State<OutputScreen> {
     });
     getResults().then((_) {
       showModalBottomSheet(
+          barrierColor: Colors.black.withOpacity(0.2),
           backgroundColor: Colors.transparent,
           context: context,
           builder: (builder) => featureMenu(context));
@@ -140,14 +146,8 @@ class OutputScreenState extends State<OutputScreen> {
     showRomanized = false;
     showVolumeSign = false;
     playAudio = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<ChangeScriptListener>()
-          .change(langTargetTag == AppLanguage.zh);
-    });
-    // context
-    //     .read<ChangeScriptListener>()
-    //     .change(langTargetTag == AppLanguage.zh);
+    withRomanization = langTargetTag == AppLanguage.zh;
+
     final textRecognizer = GoogleMlKit.vision.textDetectorV2();
     // inputText = await textRecognizer.processImage(inputImage,
     //     script: TextRecognitionOptions.CHINESE);
@@ -206,8 +206,8 @@ class OutputScreenState extends State<OutputScreen> {
     screenHeight = MediaQuery.of(context).size.height;
     if (langSourceTag != context.watch<SourceLanguageChanger>().tag ||
         langTargetTag != context.watch<TargetLanguageChanger>().tag) {
-      debugPrint('wew');
       getResults();
+      debugPrint('wew $withRomanization');
     }
     getImageDimensions();
     // recognizeText();
@@ -219,46 +219,43 @@ class OutputScreenState extends State<OutputScreen> {
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
       body: Stack(children: [
-        !playAudio
-            ? Container()
-            : showVolumeSign
-                ? volumeSign()
-                : loadingSign(),
         !hasTranslated
             ? Stack(children: [
                 imageDisplay(),
                 const Center(child: CircularProgressIndicator())
               ])
-            : !showOverlay
-                ? imageDisplay()
-                :
-                // showRomanized
-                // ?
-                Center(
-                    child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: SizedBox(
-                            width: imageWidth.toDouble(),
-                            height: imageHeight.toDouble(),
-                            child: RepaintBoundary(
-                                key: globalKey,
-                                child: Stack(children: [
-                                  imageDisplay(),
-                                  CustomPaint(
-                                      painter: BoxPainter(
-                                    File(widget.inputImage.path),
-                                    inputText,
-                                  )),
-                                  showRomanized
-                                      ? CustomPaint(
-                                          painter:
-                                              RomanizationPainter(inputText))
-                                      :
-                                      // const Center(child: Text("hello"))
+            : InteractiveViewer(
+                maxScale: 4,
+                child: !showOverlay
+                    ? imageDisplay()
+                    :
+                    // showRomanized
+                    // ?
+                    Center(
+                        child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: SizedBox(
+                                width: imageWidth.toDouble(),
+                                height: imageHeight.toDouble(),
+                                child: RepaintBoundary(
+                                    key: globalKey,
+                                    child: Stack(children: [
+                                      imageDisplay(),
                                       CustomPaint(
-                                          painter:
-                                              TranslationPainter(inputText))
-                                ]))))),
+                                          painter: BoxPainter(
+                                        File(widget.inputImage.path),
+                                        inputText,
+                                      )),
+                                      showRomanized
+                                          ? CustomPaint(
+                                              painter: RomanizationPainter(
+                                                  inputText))
+                                          :
+                                          // const Center(child: Text("hello"))
+                                          CustomPaint(
+                                              painter:
+                                                  TranslationPainter(inputText))
+                                    ])))))),
         // : Center(
         //     child: FittedBox(
         //         fit: BoxFit.scaleDown,
@@ -277,11 +274,17 @@ class OutputScreenState extends State<OutputScreen> {
         //                       painter: TranslationPainter(
         // inputText, translatedTextList))
         // ]))))),
+        !playAudio
+            ? Container()
+            : showVolumeSign
+                ? volumeSign()
+                : loadingSign(),
         Column(mainAxisAlignment: MainAxisAlignment.end, children: [
           GestureDetector(
               // onVerticalDragEnd: (DragEndDetails details) => {},
               onVerticalDragStart: (DragStartDetails details) =>
                   showModalBottomSheet(
+                      barrierColor: Colors.black.withOpacity(0.2),
                       backgroundColor: Colors.transparent,
                       context: context,
                       builder: (context) => featureMenu(context)),
@@ -318,6 +321,7 @@ class OutputScreenState extends State<OutputScreen> {
               ),
               child: Center(
                   child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
                 height: 5.0,
                 width: 30.0,
                 decoration: BoxDecoration(
@@ -326,36 +330,33 @@ class OutputScreenState extends State<OutputScreen> {
               ))),
           Container(
             width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.13,
+            height: MediaQuery.of(context).size.height * 0.12,
             decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
                   width: 0.0,
                   color: Colors.white,
                 )),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: withRomanization
-                  ? Features.features5.length
-                  : Features.features4.length,
-              itemBuilder: (context, index) {
-                final feature = withRomanization
-                    ? Features.features5[index]
-                    : Features.features4[index];
-                return buildFeature(feature);
-              },
-            ),
+            child:
+
+                // ListView.builder(
+                // scrollDirection: Axis.horizontal,
+                // itemCount: Features.features.length,
+                // itemBuilder: (context, index) =>
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              ...Features.features.map((Feature feat) => buildFeature(feat))
+            ]),
           ),
-          Container(
-              padding: const EdgeInsets.only(left: 20, right: 20),
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height * 0.15,
-              color: Colors.white,
-              child: ListView(children: [
-                Text("RECOGNIZED: $recognizedText"),
-                Text("TRANSLATED: $translatedText"),
-                Text("ROMANIZED: $romanizedText"),
-              ]))
+          // Container(
+          //     padding: const EdgeInsets.only(left: 20, right: 20),
+          //     width: MediaQuery.of(context).size.width,
+          //     height: MediaQuery.of(context).size.height * 0.15,
+          //     color: Colors.white,
+          //     child: ListView(children: [
+          //       Text("RECOGNIZED: $recognizedText"),
+          //       Text("TRANSLATED: $translatedText"),
+          //       Text("ROMANIZED: $romanizedText"),
+          //     ]))
         ]));
   }
 
@@ -393,12 +394,12 @@ class OutputScreenState extends State<OutputScreen> {
           child: const Icon(
             Icons.volume_up,
             size: 30,
-            color: Colors.white,
+            color: Colors.blue,
           )));
 
   Widget buildFeature(Feature feat) => Container(
-      padding: const EdgeInsets.all(10),
-      child: Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+      margin: const EdgeInsets.only(left: 1.5, right: 1.5),
+      child: Column(children: [
         ElevatedButton(
             style: ElevatedButton.styleFrom(
               primary: Colors.black,
@@ -417,7 +418,16 @@ class OutputScreenState extends State<OutputScreen> {
               if (feat == Features.toggle) {
                 setState(() => showOverlay = !showOverlay);
               } else if (feat == Features.change) {
-                setState(() => showRomanized = !showRomanized);
+                if (withRomanization) {
+                  setState(() => showRomanized = !showRomanized);
+                } else {
+                  Fluttertoast.showToast(
+                      msg: '! Not applicable. Target language is not Chinese.',
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.CENTER,
+                      backgroundColor: Colors.black45,
+                      textColor: Colors.white);
+                }
               } else if (feat == Features.copy) {
                 if (showOverlay) {
                   if (showRomanized) {
@@ -727,7 +737,7 @@ class TranslationPainter extends CustomPainter {
             text: TextSpan(
               text: translatedTextList[counter],
               style: TextStyle(
-                fontSize: frameHeight,
+                fontSize: frameHeight + 10,
                 // color: frameColor.titleTextColor
               ),
             ),
