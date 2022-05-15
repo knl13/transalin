@@ -76,19 +76,7 @@ class OutputScreenState extends State<OutputScreen> {
   FToast ftoast = FToast();
   late bool withRomanization;
 
-  AppBar appBar = AppBar(
-    title: const Text('TranSalin',
-        style: TextStyle(shadows: [
-          Shadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, 0))
-        ])),
-    centerTitle: true,
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    leading: const Icon(Icons.arrow_back, color: Colors.white, shadows: [
-      Shadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, 0))
-    ]),
-  );
-
+  late AppBar appBar;
   void getImageDimensions() {
     final size = isg.ImageSizeGetter.getSize(
         isgfi.FileInput(File(widget.inputImage.path)));
@@ -104,29 +92,54 @@ class OutputScreenState extends State<OutputScreen> {
   @override
   void initState() {
     super.initState();
+
     image = Image.file(File(widget.inputImage.path));
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
         .then((image) => uiImage = image);
 
+    appBar = AppBar(
+      title: const Text('TranSalin',
+          style: TextStyle(shadows: [
+            Shadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 0))
+          ])),
+      centerTitle: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back,
+            size: 25,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                  color: Colors.black12, blurRadius: 10, offset: Offset(0, 0))
+            ]),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+
     flutterTts.setStartHandler(() {
       ///This is called when the audio starts
-      setState(() => showVolumeSign = true);
+      if (mounted) setState(() => showVolumeSign = true);
     });
 
     flutterTts.setCompletionHandler(() {
       ///This is called when the audio ends
-      setState(() {
-        showVolumeSign = false;
-        playAudio = false;
-      });
+      if (mounted) {
+        setState(() {
+          showVolumeSign = false;
+          playAudio = false;
+        });
+      }
     });
     getResults().then((_) {
-      showModalBottomSheet(
-          barrierColor: Colors.black.withOpacity(0.2),
-          backgroundColor: Colors.transparent,
-          context: context,
-          builder: (builder) => featureMenu(context));
+      if (mounted) {
+        showModalBottomSheet(
+            barrierColor: Colors.black.withOpacity(0.2),
+            backgroundColor: Colors.transparent,
+            context: context,
+            builder: (builder) => featureMenu(context));
+      }
     });
   }
 
@@ -147,15 +160,18 @@ class OutputScreenState extends State<OutputScreen> {
     showVolumeSign = false;
     playAudio = false;
     withRomanization = langTargetTag == AppLanguage.zh;
+    await flutterTts.setPitch(1);
+    if (!mounted) return;
 
     final textRecognizer = GoogleMlKit.vision.textDetectorV2();
     // inputText = await textRecognizer.processImage(inputImage,
-    //     script: TextRecognitionOptions.CHINESE);
+    //     script: TextRecognitionOptions.KOREAN);
     inputText = await textRecognizer.processImage(inputImage,
         script: TextRecognitionOptions.CHINESE);
+    if (!mounted) return;
     await textRecognizer.close();
-
-    setState(() => hasRecognized = true);
+    if (!mounted) return;
+    if (mounted) setState(() => hasRecognized = true);
 
     String lineText;
     String outputText;
@@ -170,6 +186,7 @@ class OutputScreenState extends State<OutputScreen> {
                 sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
 
         outputText = await translator.translateText(lineText);
+        if (!mounted) return;
         translator.close();
 
         if (mounted) {
@@ -202,17 +219,16 @@ class OutputScreenState extends State<OutputScreen> {
 
   @override
   Widget build(BuildContext context) {
-    screenWidth = MediaQuery.of(context).size.width;
-    screenHeight = MediaQuery.of(context).size.height;
-    if (langSourceTag != context.watch<SourceLanguageChanger>().tag ||
-        langTargetTag != context.watch<TargetLanguageChanger>().tag) {
-      getResults();
-      debugPrint('wew $withRomanization');
+    if (mounted) {
+      screenWidth = MediaQuery.of(context).size.width;
+      screenHeight = MediaQuery.of(context).size.height;
+      if (langSourceTag != context.watch<SourceLanguageChanger>().tag ||
+          langTargetTag != context.watch<TargetLanguageChanger>().tag) {
+        getResults();
+      }
     }
     getImageDimensions();
-    // recognizeText();
-    // translateText();
-    debugPrint('test test $hasRecognized $hasTranslated');
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: appBar,
@@ -231,31 +247,11 @@ class OutputScreenState extends State<OutputScreen> {
                     :
                     // showRomanized
                     // ?
-                    Center(
-                        child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: SizedBox(
-                                width: imageWidth.toDouble(),
-                                height: imageHeight.toDouble(),
-                                child: RepaintBoundary(
-                                    key: globalKey,
-                                    child: Stack(children: [
-                                      imageDisplay(),
-                                      CustomPaint(
-                                          painter: BoxPainter(
-                                        File(widget.inputImage.path),
-                                        inputText,
-                                      )),
-                                      showRomanized
-                                          ? CustomPaint(
-                                              painter: RomanizationPainter(
-                                                  inputText))
-                                          :
-                                          // const Center(child: Text("hello"))
-                                          CustomPaint(
-                                              painter:
-                                                  TranslationPainter(inputText))
-                                    ])))))),
+                    widget.index == 0
+                        ? Center(child: overlayDisplay())
+                        : Align(
+                            alignment: Alignment.topCenter,
+                            child: overlayDisplay())),
         // : Center(
         //     child: FittedBox(
         //         fit: BoxFit.scaleDown,
@@ -282,25 +278,51 @@ class OutputScreenState extends State<OutputScreen> {
         Column(mainAxisAlignment: MainAxisAlignment.end, children: [
           GestureDetector(
               // onVerticalDragEnd: (DragEndDetails details) => {},
-              onVerticalDragStart: (DragStartDetails details) =>
+              onVerticalDragStart: (DragStartDetails details) {
+                if (mounted) {
                   showModalBottomSheet(
                       barrierColor: Colors.black.withOpacity(0.2),
                       backgroundColor: Colors.transparent,
                       context: context,
-                      builder: (context) => featureMenu(context)),
+                      builder: (context) => featureMenu(context));
+                }
+              },
               child: const LanguageBar()),
         ])
       ]),
     );
   }
 
-  SizedBox featureMenu(BuildContext context) {
+  FittedBox overlayDisplay() {
+    return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(
+            width: imageWidth.toDouble(),
+            height: imageHeight.toDouble(),
+            child: RepaintBoundary(
+                key: globalKey,
+                child: Stack(children: [
+                  imageDisplay(),
+                  CustomPaint(
+                      painter: BoxPainter(
+                    File(widget.inputImage.path),
+                    inputText,
+                  )),
+                  showRomanized
+                      ? CustomPaint(painter: RomanizationPainter(inputText))
+                      :
+                      // const Center(child: Text("hello"))
+                      CustomPaint(painter: TranslationPainter(inputText))
+                ]))));
+  }
+
+  Widget featureMenu(BuildContext context) {
     return SizedBox(
-        height: screenHeight * 0.4,
+        height: screenHeight * 0.275,
         child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
           const LanguageBar(),
           Container(
-              width: MediaQuery.of(context).size.width,
+              width: screenWidth,
               padding: const EdgeInsets.only(top: 10.0),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -329,8 +351,8 @@ class OutputScreenState extends State<OutputScreen> {
                     borderRadius: const BorderRadius.all(Radius.circular(5.0))),
               ))),
           Container(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.12,
+            width: screenWidth,
+            height: screenHeight * 0.12,
             decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
@@ -416,10 +438,10 @@ class OutputScreenState extends State<OutputScreen> {
             ),
             onPressed: () {
               if (feat == Features.toggle) {
-                setState(() => showOverlay = !showOverlay);
+                if (mounted) setState(() => showOverlay = !showOverlay);
               } else if (feat == Features.change) {
                 if (withRomanization) {
-                  setState(() => showRomanized = !showRomanized);
+                  if (mounted) setState(() => showRomanized = !showRomanized);
                 } else {
                   Fluttertoast.showToast(
                       msg: '! Not applicable. Target language is not Chinese.',
@@ -457,7 +479,7 @@ class OutputScreenState extends State<OutputScreen> {
                   // );
                 });
               } else if (feat == Features.listen) {
-                setState(() => playAudio = true);
+                if (mounted) setState(() => playAudio = true);
                 // debugPrint('weh $showVolumeSign');
                 // ftoast.init(context);
 
@@ -468,17 +490,17 @@ class OutputScreenState extends State<OutputScreen> {
                 () async {
                   if (!showOverlay) {
                     flutterTts.setLanguage(speechSourceTag);
-                    await flutterTts.setPitch(1);
                     await flutterTts.speak(recognizedText);
+                    if (!mounted) return;
                   } else {
                     if (showRomanized) {
                       flutterTts.setLanguage('zh-CN');
-                      await flutterTts.setPitch(1);
                       await flutterTts.speak(romanizedText);
+                      if (!mounted) return;
                     } else {
                       flutterTts.setLanguage(speechTargetTag);
-                      await flutterTts.setPitch(1);
                       await flutterTts.speak(translatedText);
+                      if (!mounted) return;
                     }
                   }
                 }();
@@ -498,15 +520,18 @@ class OutputScreenState extends State<OutputScreen> {
                     RenderRepaintBoundary boundary = globalKey.currentContext
                         ?.findRenderObject() as RenderRepaintBoundary;
                     ui.Image image = await boundary.toImage();
+                    if (!mounted) return;
+
                     // Uint8List pngBytes = byteData.buffer.asUint8List();
 
                     ByteData? byteData =
                         await image.toByteData(format: ui.ImageByteFormat.png);
+                    if (!mounted) return;
 
                     await ImageGallerySaver.saveImage(
                         byteData!.buffer.asUint8List());
+                    if (!mounted) return;
                   }
-
                   Fluttertoast.showToast(
                       msg: '$textLabel image saved',
                       toastLength: Toast.LENGTH_SHORT,
@@ -529,57 +554,13 @@ class OutputScreenState extends State<OutputScreen> {
         )
       ]));
 
-  void recognizeText() async {
-    final textRecognizer = GoogleMlKit.vision.textDetectorV2();
-    // inputText = await textRecognizer.processImage(inputImage,
-    //     script: TextRecognitionOptions.CHINESE);
-    inputText = await textRecognizer.processImage(inputImage,
-        script: TextRecognitionOptions.CHINESE);
-    await textRecognizer.close();
-
-    setState(() => hasRecognized = true);
-  }
-
-  void translateText() async {
-    String lineText;
-    String outputText;
-    recognizedText = '';
-    translatedText = '';
-    romanizedText = '';
-
-    //translate recognized text by block to assure a sound translation
-    for (TextBlock block in inputText.blocks) {
-      // for (TextLine line in block.lines) {
-      lineText = block.text;
-      final OnDeviceTranslator translator = GoogleMlKit.nlp.onDeviceTranslator(
-          sourceLanguage: AppLanguage.ko, targetLanguage: AppLanguage.tl);
-
-      outputText = await translator.translateText(lineText);
-      translator.close();
-
-      if (mounted) {
-        setState(() {
-          recognizedText += '$lineText ';
-          translatedText += '$outputText ';
-          romanizedText +=
-              '${PinyinHelper.getPinyinE(recognizedText, separator: " ", defPinyin: '#', format: PinyinFormat.WITHOUT_TONE)} ';
-        });
-      }
-    }
-
-    debugPrint("test 1 $recognizedText");
-    debugPrint("test 2 $translatedText");
-    debugPrint("test 3 $romanizedText");
-    if (mounted) setState(() => hasTranslated = true);
-  }
-
   getLangTag(int index) {
     if (mounted) {
       return index == 0
           ? context.read<SourceLanguageChanger>().tag
           : context.read<TargetLanguageChanger>().tag;
     }
-    return '';
+    return;
   }
 
   getSpeechTag(String langTag) {
@@ -866,12 +847,9 @@ class RomanizationPainter extends CustomPainter {
   int counter = 0;
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
-    // final translator = GoogleMlKit.nlp.onDeviceTranslator(
-    //     sourceLanguage: langSourceTag, targetLanguage: langTargetTag);
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         List<Offset> points = line.cornerPoints;
-        // String outputText = await translator.translateText(line.text);
 
         double frameWidth = points[1].dx - points[0].dx;
         double frameHeight = points[3].dy - points[0].dy;

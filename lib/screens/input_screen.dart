@@ -25,6 +25,7 @@ class InputScreen extends StatefulWidget {
 class InputScreenState extends State<InputScreen> {
   late final CameraDescription camera;
   late Future<void> _initializeControllerFuture;
+  bool isFlashOn = true;
 
   @override
   void initState() {
@@ -37,12 +38,15 @@ class InputScreenState extends State<InputScreen> {
         enableAudio: false);
 
     _initializeControllerFuture = _controller.initialize();
+
     super.initState();
   }
 
   displayCameraView() {
     _initializeControllerFuture = _controller.initialize();
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -84,6 +88,9 @@ class InputScreenState extends State<InputScreen> {
                       _controller.value.isInitialized) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       context.read<CameraControllerListener>().change(true);
+                      !isFlashOn
+                          ? _controller.setFlashMode(FlashMode.off)
+                          : _controller.setFlashMode(FlashMode.always);
                     });
 
                     // If the Future is complete, display the preview.
@@ -175,11 +182,15 @@ class InputScreenState extends State<InputScreen> {
                   Expanded(
                       child: isControllerInitialized
                           ? IconButton(
-                              icon: const Icon(Icons.flash_off),
+                              icon: !isFlashOn
+                                  ? const Icon(Icons.flash_on)
+                                  : const Icon(Icons.flash_off),
                               iconSize: 30,
                               color: Colors.white,
                               onPressed: () {
-                                _controller.setFlashMode(FlashMode.always);
+                                !isFlashOn
+                                    ? setState(() => isFlashOn = true)
+                                    : setState(() => isFlashOn = false);
                               },
                             )
                           : const SizedBox(width: 30))
