@@ -31,7 +31,8 @@ List<String> romanizedTextList = [];
 List<String> textDisplayList = [];
 late ui.Image translatedImage;
 late ui.Image romanizedImage;
-late ui.Image uiImage;
+late imagelib.Image? imageLibImage;
+
 late ui.Size sizeCopy;
 List<List<Color>> frameColors = [];
 
@@ -62,9 +63,11 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   late InputImage inputImage;
   late double screenWidth;
   late double screenHeight;
+  late ui.Image uiImage;
 
   late int imageWidth;
   late int imageHeight;
+  late int halfLength;
   late bool showOverlay;
   late bool showRomanized;
   late bool showVolumeSign;
@@ -95,6 +98,12 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
         .then((image) => uiImage = image);
+
+    Uint8List imageBytes = File(widget.inputImage.path).readAsBytesSync();
+
+    List<int> values = imageBytes.buffer.asUint8List();
+
+    imageLibImage = imagelib.decodeImage(values);
 
     appBar = AppBar(
       title: const Text('TranSalin',
@@ -182,31 +191,28 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     String lineText;
     String outputText;
     String convertedText;
-    Uint8List imageBytes = File(widget.inputImage.path).readAsBytesSync();
 
     //translate recognized text by block to assure a sound translation
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
-        List<Offset> points = line.cornerPoints;
+        // List<Offset> points = line.cornerPoints;
         // List<Color> colors = extractPixelsColors(
         //     imageBytes, topLeft, topRight, bottomLeft, bottomRight);
 
         // frameColor =
         //     generator.darkVibrantColor ?? PaletteColor(Colors.black, 2);
 
-        List<Color> colors = extractPixelsColors(
-            imageBytes,
-            imagelib.Point(points[3].dx, points[3].dy),
-            imagelib.Point(points[2].dx, points[2].dy),
-            imagelib.Point(points[0].dx, points[0].dy),
-            imagelib.Point(points[1].dx, points[1].dy));
-        colors = sortColors(colors);
-        int halfLength = colors.length ~/ 2;
-        Color color1 =
-            getAverageColor(colors.sublist(0, halfLength), 0, halfLength);
-        Color color2 = getAverageColor(
-            colors.sublist(halfLength), halfLength, colors.length);
-        frameColors.add([color1, color2]);
+        // List<Color> colors = extractPixelsColors(
+        //     imageBytes,
+        //     imagelib.Point(points[3].dx, points[3].dy),
+        //     imagelib.Point(points[2].dx, points[2].dy),
+        //     imagelib.Point(points[0].dx, points[0].dy),
+        //     imagelib.Point(points[1].dx, points[1].dy));
+        // colors = sortColors(colors);
+        // halfLength = (colors.length ~/ 2);
+        // Color color1 = getAverageColor(colors, 0, halfLength);
+        // Color color2 = getAverageColor(colors, halfLength, colors.length);
+        // frameColors.add([color1, color2]);
         lineText = line.text;
         final OnDeviceTranslator translator = GoogleMlKit.nlp
             .onDeviceTranslator(
@@ -570,15 +576,10 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   }
 
   // image lib uses uses KML color format, convert #AABBGGRR to regular #AARRGGBB
-  int abgrToArgb(int argbColor) {
-    int r = (argbColor >> 16) & 0xFF;
-    int b = argbColor & 0xFF;
-    return (argbColor & 0xFF00FF00) | (b << 16) | r;
-  }
 
   Color getFlutterColor(int abgr) {
-    int argb = abgrToArgb(abgr);
-    return Color(argb);
+    // int argb = abgrToArgb(abgr);
+    return Color(0);
   }
 
   List<Color> extractPixelsColors(
@@ -591,28 +592,30 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     List<Color> colors = [];
 
     List<int> values = bytes.buffer.asUint8List();
-    imagelib.Image? image = imagelib.decodeImage(values);
 
-    if (image != null) {
-      croppedImage = imagelib.copyRectify(image,
-          topLeft: topLeft,
-          topRight: topRight,
-          bottomLeft: bottomLeft,
-          bottomRight: bottomRight);
+    // if (image != null) {
+    //   croppedImage = imagelib.copyRectify(image,
+    //       topLeft: topLeft,
+    //       topRight: topRight,
+    //       bottomLeft: bottomLeft,
+    //       bottomRight: bottomRight);
 
-      List<int> pixels = [];
+    //   List<int> pixels = [];
 
-      int width = croppedImage.width;
-      int height = croppedImage.height;
+    //   int width = croppedImage.width;
+    //   int height = croppedImage.height;
+    //   debugPrint(
+    //       'weh $imageWidth $imageHeight ${croppedImage.width} ${croppedImage.height}');
 
-      for (int j = 1; j < height + 1; j++) {
-        for (int i = 1; i < width + 1; i++) {
-          int pixel = croppedImage.getPixel(i, j);
-          pixels.add(pixel);
-          colors.add(getFlutterColor(pixel));
-        }
-      }
-    }
+    //   for (int i = 0; i < width; i++) {
+    //     for (int j = 0; j < height; j++) {
+    //       debugPrint('weh $i $j');
+    //       int pixel = croppedImage.getPixel(i, j);
+    //       pixels.add(pixel);
+    //       colors.add(getFlutterColor(pixel));
+    //     }
+    //   }
+    // }
 
     return colors;
   }
@@ -630,14 +633,15 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     int r = 0, g = 0, b = 0;
 
     for (int i = start; i < end; i++) {
+      debugPrint('weh weh $i');
       r += colors[i].red;
       g += colors[i].green;
       b += colors[i].blue;
     }
 
-    r = r ~/ colors.length;
-    g = g ~/ colors.length;
-    b = b ~/ colors.length;
+    r = r ~/ halfLength;
+    g = g ~/ halfLength;
+    b = b ~/ halfLength;
 
     return Color.fromRGBO(r, g, b, 1);
   }
@@ -649,6 +653,8 @@ class BoxPainter extends CustomPainter {
   final File fileImage;
   late Uint8List bytes;
   // final ui.PictureRecorder recorder = ui.PictureRecorder();
+  int counter = 0;
+  late ByteData uiBytes;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -681,10 +687,19 @@ class BoxPainter extends CustomPainter {
         rectangle.lineTo(points[2].dx, points[2].dy);
         rectangle.lineTo(points[3].dx, points[3].dy);
 
-        // paint.color = frameColor;
+        paint.color = Colors.black;
+        // paint.color = Color(abgrToArgb(imageLibImage!
+        // .getPixel(points[2].dx.toInt(), points[2].dy.toInt())));
         canvas.drawPath(rectangle, paint);
       }
     }
+    counter = 0;
+  }
+
+  int abgrToArgb(int argbColor) {
+    int r = (argbColor >> 16) & 0xFF;
+    int b = argbColor & 0xFF;
+    return (argbColor & 0xFF00FF00) | (b << 16) | r;
   }
 
   @override
@@ -719,7 +734,10 @@ class TranslationPainter extends CustomPainter {
             text: TextSpan(
               text: translatedTextList[counter],
               style: TextStyle(
-                  fontSize: frameHeight + 10, color: frameColors[counter][1]),
+                fontSize: frameHeight + 5,
+                // color: frameColors[counter][1],
+                color: Colors.white,
+              ),
             ),
             textDirection: TextDirection.ltr,
             textScaleFactor: 1)
@@ -771,7 +789,9 @@ class TranslationPainter extends CustomPainter {
         textPainter.layout(maxWidth: frameWidth);
         canvas.save();
         canvas.translate(points[0].dx, points[0].dy);
+        debugPrint('weh weh 1');
         canvas.rotate(findAngle(points[0], points[1]));
+        debugPrint('weh weh 2');
         canvas.translate(-points[0].dx, -points[0].dy);
         textPainter.paint(canvas, Offset(points[0].dx, points[0].dy));
         canvas.restore();
@@ -857,10 +877,9 @@ class RomanizationPainter extends CustomPainter {
         final TextPainter textPainter = TextPainter(
             text: TextSpan(
               text: romanizedTextList[counter],
-              style: TextStyle(
-                fontSize: frameHeight,
-                color: frameColors[counter][1],
-              ),
+              style: TextStyle(fontSize: frameHeight, color: Colors.white
+                  // color: frameColors[counter][1],
+                  ),
             ),
             textDirection: TextDirection.ltr,
             textScaleFactor: 1)
