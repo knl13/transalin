@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:math';
-// import 'package:image/image.dart' as imagelib;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/rendering.dart' hide BoxDecoration, BoxShadow;
@@ -14,6 +13,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:image/image.dart' as imagelib;
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_size_getter/file_input.dart' as isgfi;
 import 'package:image_size_getter/image_size_getter.dart' as isg;
@@ -33,6 +33,7 @@ late ui.Image translatedImage;
 late ui.Image romanizedImage;
 late ui.Image uiImage;
 late ui.Size sizeCopy;
+List<List<Color>> frameColors = [];
 
 // A widget that displays the picture taken by the user.
 class OutputScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class OutputScreen extends StatefulWidget {
   OutputScreenState createState() => OutputScreenState();
 }
 
-class OutputScreenState extends State<OutputScreen> {
+class OutputScreenState<T extends num> extends State<OutputScreen> {
   late String langSourceTag;
   late String langTargetTag;
   late String speechSourceTag;
@@ -57,7 +58,6 @@ class OutputScreenState extends State<OutputScreen> {
   late String recognizedText;
   late String translatedText;
   late String romanizedText;
-  late List<Offset>? cornerPoints;
   late Image image;
   late InputImage inputImage;
   late double screenWidth;
@@ -73,9 +73,7 @@ class OutputScreenState extends State<OutputScreen> {
   late String textLabel;
   GlobalKey globalKey = GlobalKey();
   final FlutterTts flutterTts = FlutterTts();
-  FToast ftoast = FToast();
   late bool withRomanization;
-
   late AppBar appBar;
   void getImageDimensions() {
     final size = isg.ImageSizeGetter.getSize(
@@ -132,6 +130,7 @@ class OutputScreenState extends State<OutputScreen> {
         });
       }
     });
+
     getResults().then((_) {
       if (mounted) {
         showModalBottomSheet(
@@ -141,6 +140,14 @@ class OutputScreenState extends State<OutputScreen> {
             builder: (builder) => featureMenu(context));
       }
     });
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    Fluttertoast.cancel();
+    flutterTts.stop();
+    super.dispose();
   }
 
   getResults() async {
@@ -160,8 +167,7 @@ class OutputScreenState extends State<OutputScreen> {
     showVolumeSign = false;
     playAudio = false;
     withRomanization = langTargetTag == AppLanguage.zh;
-    await flutterTts.setPitch(1);
-    if (!mounted) return;
+    frameColors.clear();
 
     final textRecognizer = GoogleMlKit.vision.textDetectorV2();
     // inputText = await textRecognizer.processImage(inputImage,
@@ -176,10 +182,31 @@ class OutputScreenState extends State<OutputScreen> {
     String lineText;
     String outputText;
     String convertedText;
+    Uint8List imageBytes = File(widget.inputImage.path).readAsBytesSync();
 
     //translate recognized text by block to assure a sound translation
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
+        List<Offset> points = line.cornerPoints;
+        // List<Color> colors = extractPixelsColors(
+        //     imageBytes, topLeft, topRight, bottomLeft, bottomRight);
+
+        // frameColor =
+        //     generator.darkVibrantColor ?? PaletteColor(Colors.black, 2);
+
+        List<Color> colors = extractPixelsColors(
+            imageBytes,
+            imagelib.Point(points[3].dx, points[3].dy),
+            imagelib.Point(points[2].dx, points[2].dy),
+            imagelib.Point(points[0].dx, points[0].dy),
+            imagelib.Point(points[1].dx, points[1].dy));
+        colors = sortColors(colors);
+        int halfLength = colors.length ~/ 2;
+        Color color1 =
+            getAverageColor(colors.sublist(0, halfLength), 0, halfLength);
+        Color color2 = getAverageColor(
+            colors.sublist(halfLength), halfLength, colors.length);
+        frameColors.add([color1, color2]);
         lineText = line.text;
         final OnDeviceTranslator translator = GoogleMlKit.nlp
             .onDeviceTranslator(
@@ -193,11 +220,14 @@ class OutputScreenState extends State<OutputScreen> {
           setState(() {
             recognizedText += '$lineText ';
             translatedText += '$outputText ';
-            convertedText = PinyinHelper.getPinyinE(lineText,
-                separator: " ", format: PinyinFormat.WITH_TONE_MARK);
-            romanizedText += '$convertedText ';
             translatedTextList.add(outputText);
-            romanizedTextList.add(convertedText);
+
+            if (withRomanization) {
+              convertedText = PinyinHelper.getPinyinE(outputText,
+                  separator: " ", format: PinyinFormat.WITH_TONE_MARK);
+              romanizedText += '$convertedText ';
+              romanizedTextList.add(convertedText);
+            }
           });
         }
       }
@@ -209,6 +239,7 @@ class OutputScreenState extends State<OutputScreen> {
         });
       }
     }
+
     if (mounted) setState(() => hasTranslated = true);
   }
 
@@ -244,32 +275,11 @@ class OutputScreenState extends State<OutputScreen> {
                 maxScale: 4,
                 child: !showOverlay
                     ? imageDisplay()
-                    :
-                    // showRomanized
-                    // ?
-                    widget.index == 0
+                    : widget.index == 0
                         ? Center(child: overlayDisplay())
                         : Align(
                             alignment: Alignment.topCenter,
                             child: overlayDisplay())),
-        // : Center(
-        //     child: FittedBox(
-        //         fit: BoxFit.scaleDown,
-        //         child: SizedBox(
-        //             width: imageWidth.toDouble(),
-        //             height: imageHeight.toDouble(),
-        //             child: RepaintBoundary(
-        //                 key: globalKey,
-        //                 child: Stack(children: [
-        //                   CustomPaint(
-        //                       painter: BoxPainter(
-        //                     File(widget.inputImage.path),
-        //                     inputText,
-        //                   )),
-        //                   CustomPaint(
-        //                       painter: TranslationPainter(
-        // inputText, translatedTextList))
-        // ]))))),
         !playAudio
             ? Container()
             : showVolumeSign
@@ -277,7 +287,6 @@ class OutputScreenState extends State<OutputScreen> {
                 : loadingSign(),
         Column(mainAxisAlignment: MainAxisAlignment.end, children: [
           GestureDetector(
-              // onVerticalDragEnd: (DragEndDetails details) => {},
               onVerticalDragStart: (DragStartDetails details) {
                 if (mounted) {
                   showModalBottomSheet(
@@ -310,9 +319,7 @@ class OutputScreenState extends State<OutputScreen> {
                   )),
                   showRomanized
                       ? CustomPaint(painter: RomanizationPainter(inputText))
-                      :
-                      // const Center(child: Text("hello"))
-                      CustomPaint(painter: TranslationPainter(inputText))
+                      : CustomPaint(painter: TranslationPainter(inputText))
                 ]))));
   }
 
@@ -491,17 +498,9 @@ class OutputScreenState extends State<OutputScreen> {
                   if (!showOverlay) {
                     flutterTts.setLanguage(speechSourceTag);
                     await flutterTts.speak(recognizedText);
-                    if (!mounted) return;
                   } else {
-                    if (showRomanized) {
-                      flutterTts.setLanguage('zh-CN');
-                      await flutterTts.speak(romanizedText);
-                      if (!mounted) return;
-                    } else {
-                      flutterTts.setLanguage(speechTargetTag);
-                      await flutterTts.speak(translatedText);
-                      if (!mounted) return;
-                    }
+                    flutterTts.setLanguage(speechTargetTag);
+                    await flutterTts.speak(translatedText);
                   }
                 }();
                 // debugPrint('weh $showVolumeSign');
@@ -520,18 +519,17 @@ class OutputScreenState extends State<OutputScreen> {
                     RenderRepaintBoundary boundary = globalKey.currentContext
                         ?.findRenderObject() as RenderRepaintBoundary;
                     ui.Image image = await boundary.toImage();
-                    if (!mounted) return;
 
                     // Uint8List pngBytes = byteData.buffer.asUint8List();
 
                     ByteData? byteData =
                         await image.toByteData(format: ui.ImageByteFormat.png);
-                    if (!mounted) return;
 
                     await ImageGallerySaver.saveImage(
                         byteData!.buffer.asUint8List());
-                    if (!mounted) return;
                   }
+                  if (!mounted) return;
+
                   Fluttertoast.showToast(
                       msg: '$textLabel image saved',
                       toastLength: Toast.LENGTH_SHORT,
@@ -570,6 +568,79 @@ class OutputScreenState extends State<OutputScreen> {
             ? 'fil-PH'
             : 'zh-CN';
   }
+
+  // image lib uses uses KML color format, convert #AABBGGRR to regular #AARRGGBB
+  int abgrToArgb(int argbColor) {
+    int r = (argbColor >> 16) & 0xFF;
+    int b = argbColor & 0xFF;
+    return (argbColor & 0xFF00FF00) | (b << 16) | r;
+  }
+
+  Color getFlutterColor(int abgr) {
+    int argb = abgrToArgb(abgr);
+    return Color(argb);
+  }
+
+  List<Color> extractPixelsColors(
+      Uint8List bytes,
+      imagelib.Point topLeft,
+      imagelib.Point topRight,
+      imagelib.Point bottomLeft,
+      imagelib.Point bottomRight) {
+    imagelib.Image croppedImage;
+    List<Color> colors = [];
+
+    List<int> values = bytes.buffer.asUint8List();
+    imagelib.Image? image = imagelib.decodeImage(values);
+
+    if (image != null) {
+      croppedImage = imagelib.copyRectify(image,
+          topLeft: topLeft,
+          topRight: topRight,
+          bottomLeft: bottomLeft,
+          bottomRight: bottomRight);
+
+      List<int> pixels = [];
+
+      int width = croppedImage.width;
+      int height = croppedImage.height;
+
+      for (int j = 1; j < height + 1; j++) {
+        for (int i = 1; i < width + 1; i++) {
+          int pixel = croppedImage.getPixel(i, j);
+          pixels.add(pixel);
+          colors.add(getFlutterColor(pixel));
+        }
+      }
+    }
+
+    return colors;
+  }
+
+  List<Color> sortColors(List<Color> colors) {
+    List<Color> sorted = [];
+
+    sorted.addAll(colors);
+    sorted.sort((a, b) => b.computeLuminance().compareTo(a.computeLuminance()));
+
+    return sorted;
+  }
+
+  Color getAverageColor(List<Color> colors, int start, int end) {
+    int r = 0, g = 0, b = 0;
+
+    for (int i = start; i < end; i++) {
+      r += colors[i].red;
+      g += colors[i].green;
+      b += colors[i].blue;
+    }
+
+    r = r ~/ colors.length;
+    g = g ~/ colors.length;
+    b = b ~/ colors.length;
+
+    return Color.fromRGBO(r, g, b, 1);
+  }
 }
 
 class BoxPainter extends CustomPainter {
@@ -578,75 +649,6 @@ class BoxPainter extends CustomPainter {
   final File fileImage;
   late Uint8List bytes;
   // final ui.PictureRecorder recorder = ui.PictureRecorder();
-
-// image lib uses uses KML color format, convert #AABBGGRR to regular #AARRGGBB
-  // int abgrToArgb(int argbColor) {
-  //   int r = (argbColor >> 16) & 0xFF;
-  //   int b = argbColor & 0xFF;
-  //   return (argbColor & 0xFF00FF00) | (b << 16) | r;
-  // }
-
-  // Color getFlutterColor(int abgr) {
-  //   int argb = abgrToArgb(abgr);
-  //   return Color(argb);
-  // }
-
-  // List<Color> extractPixelsColors(
-  //     Uint8List bytes, topLeft, topRight, bottomLeft, bottomRight) {
-  //   imagelib.Image croppedImage;
-  //   List<Color> colors = [];
-
-  //   List<int> values = bytes.buffer.asUint8List();
-  //   imagelib.Image? image = imagelib.decodeImage(values);
-
-  //   if (image != null) {
-  //     croppedImage = imagelib.copyRectify(image,
-  //         topLeft: topLeft,
-  //         topRight: topRight,
-  //         bottomLeft: bottomLeft,
-  //         bottomRight: bottomRight);
-
-  //     List<int> pixels = [];
-
-  //     int width = croppedImage.width;
-  //     int height = croppedImage.height;
-
-  //     for (int j = 1; j < height + 1; j++) {
-  //       for (int i = 1; i < width + 1; i++) {
-  //         int pixel = croppedImage.getPixel(i, j);
-  //         pixels.add(pixel);
-  //         colors.add(getFlutterColor(pixel));
-  //       }
-  //     }
-  //   }
-
-  //   return colors;
-  // }
-
-  // List<Color> sortColors(List<Color> colors) {
-  //   List<Color> sorted = [];
-
-  //   sorted.addAll(colors);
-  //   sorted.sort((a, b) => b.computeLuminance().compareTo(a.computeLuminance()));
-
-  //   return sorted;
-  // }
-
-  // Color getAverageColor(List<Color> colors) {
-  //   int r = 0, g = 0, b = 0;
-
-  //   for (int i = 0; i < colors.length; i++) {
-  //     r += colors[i].red;
-  //     g += colors[i].green;
-  //     b += colors[i].blue;
-  //   }
-
-  //   r = r ~/ colors.length;
-  //   g = g ~/ colors.length;
-  //   b = b ~/ colors.length;
-
-  //   return Color.fromRGBO(r, g, b, 1);
-  // }
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -708,7 +710,6 @@ class TranslationPainter extends CustomPainter {
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         List<Offset> points = line.cornerPoints;
-        // String outputText = await translator.translateText(line.text);
 
         double frameWidth = points[1].dx - points[0].dx;
         double frameHeight = points[3].dy - points[0].dy;
@@ -718,9 +719,7 @@ class TranslationPainter extends CustomPainter {
             text: TextSpan(
               text: translatedTextList[counter],
               style: TextStyle(
-                fontSize: frameHeight + 10,
-                // color: frameColor.titleTextColor
-              ),
+                  fontSize: frameHeight + 10, color: frameColors[counter][1]),
             ),
             textDirection: TextDirection.ltr,
             textScaleFactor: 1)
@@ -860,7 +859,7 @@ class RomanizationPainter extends CustomPainter {
               text: romanizedTextList[counter],
               style: TextStyle(
                 fontSize: frameHeight,
-                // color: frameColor.titleTextColor
+                color: frameColors[counter][1],
               ),
             ),
             textDirection: TextDirection.ltr,
@@ -880,9 +879,11 @@ class RomanizationPainter extends CustomPainter {
           if (textPainter.height > frameHeight) {
             //
             //even minimum does not fit render it with minimum size
-            debugPrint("Using minimum set font");
+            debugPrint("weh 1");
             textScaleFactor = minimumFontScale;
           } else if (minimumFontScale < 1) {
+            debugPrint("weh 2");
+
             //binary search for valid Scale factor
             int h = 100;
             int l = (minimumFontScale * 100).toInt();
