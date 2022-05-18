@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 
@@ -28,7 +29,7 @@ class LanguageSwitch extends StatelessWidget {
         icon: const Icon(
           // Icons.autorenew,
           Icons.swap_horiz,
-          color: Colors.black,
+          color: AppColor.kColorPeriDarkest,
         ));
   }
 }

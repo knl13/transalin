@@ -21,6 +21,8 @@ import 'package:lpinyin/lpinyin.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/classes/feature.dart';
 import 'package:transalin/classes/features.dart';
+import 'package:transalin/constants/app_color.dart';
+import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/constants/app_language.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
@@ -61,8 +63,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   late String romanizedText;
   late Image image;
   late InputImage inputImage;
-  late double screenWidth;
-  late double screenHeight;
   late ui.Image uiImage;
 
   late int imageWidth;
@@ -93,7 +93,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   @override
   void initState() {
     super.initState();
-
     image = Image.file(File(widget.inputImage.path));
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
@@ -257,8 +256,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   @override
   Widget build(BuildContext context) {
     if (mounted) {
-      screenWidth = MediaQuery.of(context).size.width;
-      screenHeight = MediaQuery.of(context).size.height;
       if (langSourceTag != context.watch<SourceLanguageChanger>().tag ||
           langTargetTag != context.watch<TargetLanguageChanger>().tag) {
         getResults();
@@ -331,11 +328,11 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
 
   Widget featureMenu(BuildContext context) {
     return SizedBox(
-        height: screenHeight * 0.275,
+        height: AppGlobal.screenHeight * 0.275,
         child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
           const LanguageBar(),
           Container(
-              width: screenWidth,
+              width: AppGlobal.screenWidth,
               padding: const EdgeInsets.only(top: 10.0),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -364,13 +361,13 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                     borderRadius: const BorderRadius.all(Radius.circular(5.0))),
               ))),
           Container(
-            width: screenWidth,
-            height: screenHeight * 0.12,
+            width: AppGlobal.screenWidth,
+            height: AppGlobal.screenHeight * 0.12,
             decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColor.kColorPeriLighter,
                 border: Border.all(
                   width: 0.0,
-                  color: Colors.white,
+                  color: AppColor.kColorPeriLighter,
                 )),
             child:
 
@@ -450,7 +447,15 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
               //   style: BorderStyle.solid,
             ),
             onPressed: () {
-              if (feat == Features.toggle) {
+              if (recognizedText == '') {
+                Fluttertoast.showToast(
+                    msg:
+                        'No text detected. The image may be too dark or blurry.',
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.CENTER,
+                    backgroundColor: Colors.black45,
+                    textColor: Colors.white);
+              } else if (feat == Features.toggle) {
                 if (mounted) setState(() => showOverlay = !showOverlay);
               } else if (feat == Features.change) {
                 if (withRomanization) {

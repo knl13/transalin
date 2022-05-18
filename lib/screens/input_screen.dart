@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/providers/camera_controller_listener.dart';
 import 'package:transalin/screens/output_screen.dart';
 import 'package:transalin/widgets/language_bar.dart';
@@ -25,10 +26,11 @@ class InputScreen extends StatefulWidget {
 class InputScreenState extends State<InputScreen> {
   late final CameraDescription camera;
   late Future<void> _initializeControllerFuture;
-  bool isFlashOn = true;
+  bool isFlashOn = false;
 
   @override
   void initState() {
+    super.initState();
     camera = widget.cameras.first; //use first camera from the list
     // To display the current output from the Camera, create a CameraController.
     _controller = CameraController(
@@ -36,10 +38,7 @@ class InputScreenState extends State<InputScreen> {
         camera,
         ResolutionPreset.max, // Define the resolution to use.
         enableAudio: false);
-
     _initializeControllerFuture = _controller.initialize();
-
-    super.initState();
   }
 
   displayCameraView() {
@@ -58,6 +57,8 @@ class InputScreenState extends State<InputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppGlobal.screenWidth = MediaQuery.of(context).size.width;
+    AppGlobal.screenHeight = MediaQuery.of(context).size.height;
     bool isControllerInitialized =
         context.watch<CameraControllerListener>().isInitialized;
 
