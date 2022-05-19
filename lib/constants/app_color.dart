@@ -5,8 +5,9 @@ abstract class AppColor {
   static const kColorPeriDarker = Color(0xff525289);
 
   static const kColorPeri = Color(0xff6768ab);
-  static const kColorPeriLighter = Color(0xff8b96eb);
-  static const kColorPeriLightest = Color(0xffccd9ff);
+  static const kColorPeriLight = Color(0xff8b96eb);
+  static const kColorPeriLighter = Color(0xffccd9ff);
+  static const kColorPeriLightest = Color(0xffeaecf8);
 
   // static const kColorDarkPeri = Color(0xff485478);
   // static const kColorLightPeri1 = Color(0xffe6ecff);

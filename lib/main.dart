@@ -82,7 +82,7 @@ class DownloadScreenState extends State<DownloadScreen> {
   );
   Icon downloadingSymbol = const Icon(
     Icons.downloading,
-    color: AppColor.kColorPeriLighter,
+    color: AppColor.kColorPeriLight,
     size: 30,
   );
   @override
@@ -116,7 +116,7 @@ class DownloadScreenState extends State<DownloadScreen> {
     if (isChineseEnglishDownloaded && isFilipinoDownloaded) goToStartScreen();
 
     return Scaffold(
-      backgroundColor: AppColor.kColorPeriLightest,
+      backgroundColor: AppColor.kColorPeriLighter,
       body: Center(
           child: Column(
         // crossAxisAlignment: CrossAxisAlignment.center,
@@ -160,8 +160,7 @@ class DownloadScreenState extends State<DownloadScreen> {
                       const SizedBox(width: 10),
                       !isChineseEnglishDownloaded
                           ? const Text('中文 (Zhōngwén)',
-                              style:
-                                  TextStyle(color: AppColor.kColorPeriLighter))
+                              style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('中文 (Zhōngwén)',
                               style: TextStyle(
                                   color: AppColor.kColorPeriDarker,
@@ -175,8 +174,7 @@ class DownloadScreenState extends State<DownloadScreen> {
                       const SizedBox(width: 10),
                       !isChineseEnglishDownloaded
                           ? const Text('English language',
-                              style:
-                                  TextStyle(color: AppColor.kColorPeriLighter))
+                              style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('English language',
                               style: TextStyle(
                                   color: AppColor.kColorPeriDarker,
@@ -188,8 +186,7 @@ class DownloadScreenState extends State<DownloadScreen> {
                       const SizedBox(width: 10),
                       !isFilipinoDownloaded
                           ? const Text('wikang Filipino',
-                              style:
-                                  TextStyle(color: AppColor.kColorPeriLighter))
+                              style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('wikang Filipino',
                               style: TextStyle(
                                   color: AppColor.kColorPeriDarker,
@@ -222,7 +219,7 @@ class StartScreen extends StatelessWidget {
               child: Icon(
                 inst.icon,
                 size: 20,
-                color: AppColor.kColorPeriLighter,
+                color: AppColor.kColorPeriLight,
               )),
           const SizedBox(width: 10),
           FittedBox(
@@ -239,14 +236,14 @@ class StartScreen extends StatelessWidget {
           // softWrap: true,
           // overflow: TextOverflow.visible,
           style:
-              const TextStyle(color: AppColor.kColorPeriLightest, fontSize: 8),
+              const TextStyle(color: AppColor.kColorPeriLighter, fontSize: 8),
         )
       ]));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColor.kColorPeriLightest,
+      backgroundColor: AppColor.kColorPeriLighter,
       body: Center(
           child: Column(
         // crossAxisAlignment: CrossAxisAlignment.center,
@@ -273,7 +270,7 @@ class StartScreen extends StatelessWidget {
               height: AppGlobal.screenWidth * 0.4,
               padding: const EdgeInsets.only(left: 10, right: 20),
               decoration: const BoxDecoration(
-                color: AppColor.kColorPeriLightest,
+                color: AppColor.kColorPeriLighter,
               ),
               child: ListView.builder(
                   scrollDirection: Axis.horizontal,

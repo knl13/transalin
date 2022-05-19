@@ -364,10 +364,10 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             width: AppGlobal.screenWidth,
             height: AppGlobal.screenHeight * 0.12,
             decoration: BoxDecoration(
-                color: AppColor.kColorPeriLighter,
+                color: AppColor.kColorPeriLight,
                 border: Border.all(
                   width: 0.0,
-                  color: AppColor.kColorPeriLighter,
+                  color: AppColor.kColorPeriLight,
                 )),
             child:
 

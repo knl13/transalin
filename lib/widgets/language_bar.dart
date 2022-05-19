@@ -15,7 +15,7 @@ class LanguageBar extends StatelessWidget {
         height: MediaQuery.of(context).size.height * 0.08,
         margin: const EdgeInsets.only(top: 20),
         decoration: const BoxDecoration(
-            color: AppColor.kColorPeriLightest,
+            color: AppColor.kColorPeriLighter,
             borderRadius: BorderRadius.only(
                 // topLeft: Radius.circular(20),
                 // topRight: Radius.circular(20),
