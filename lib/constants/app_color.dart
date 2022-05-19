@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract class AppColor {
   static const kColorPeriDarkest = Color(0xff2d2e52);
+  static const kColorPeriDarkestOp = Color.fromRGBO(45, 46, 82, 0.3);
   static const kColorPeriDarker = Color(0xff464774);
   static const kColorPeriDark = Color(0xff525289);
   static const kColorPeri = Color(0xff6768ab);

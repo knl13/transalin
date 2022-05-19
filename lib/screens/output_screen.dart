@@ -20,13 +20,13 @@ import 'package:image_size_getter/file_input.dart' as isgfi;
 import 'package:image_size_getter/image_size_getter.dart' as isg;
 import 'package:lpinyin/lpinyin.dart';
 import 'package:provider/provider.dart';
-import 'package:transalin/classes/feature.dart';
 import 'package:transalin/classes/features.dart';
 import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/constants/app_language.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
+import 'package:transalin/screens/instruction_screen.dart';
 import 'package:transalin/widgets/language_bar.dart';
 
 List<String> translatedTextList = [];
@@ -109,26 +109,27 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
 
     appBar = AppBar(
       title: const Text('TranSalin',
-          style: TextStyle(shadows: [
-            Shadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 0))
-          ])),
+          style: TextStyle(shadows: [AppGlobal.shadowStyle])),
       centerTitle: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: [
         IconButton(
-            icon: const Icon(Icons.settings_rounded),
-            // color: AppColor.kColorPeriLightest,
-            onPressed: () {})
+            splashColor: AppColor.kColorPeriLight,
+            splashRadius: 14,
+            icon: const Icon(Icons.help_outline_rounded,
+                size: 20,
+                color: Colors.white,
+                shadows: [AppGlobal.shadowStyle]),
+            onPressed: () async => await Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (context) => const InstructionScreen(pop: true))))
       ],
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded,
-            size: 25,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                  color: Colors.black12, blurRadius: 10, offset: Offset(0, 0))
-            ]),
+        splashColor: AppColor.kColorPeriLight,
+        splashRadius: 14,
+        icon: const Icon(Icons.close_rounded,
+            size: 25, color: Colors.white, shadows: [AppGlobal.shadowStyle]),
         onPressed: () => Navigator.of(context).pop(),
       ),
     );
@@ -276,140 +277,141 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: appBar,
-      floatingActionButton:
-          //  Center(
-          // child:
-          Container(
-              padding: EdgeInsets.only(bottom: (AppGlobal.screenHeight * 0.08)),
-              alignment: Alignment.bottomRight,
-              //         // height: 100,
-              //         // width: 100,
-              child: SpeedDial(
-                backgroundColor: AppColor.kColorPeri,
-                spacing: 3,
-                spaceBetweenChildren: 3,
-                closeManually: true,
-                openCloseDial: isDialOpen,
+      floatingActionButton: Container(
+          padding: EdgeInsets.only(bottom: (AppGlobal.screenHeight * 0.08)),
+          alignment: Alignment.bottomRight,
+          child: SpeedDial(
+            backgroundColor: AppColor.kColorPeriDarkest,
+            spacing: 3,
+            spaceBetweenChildren: 3,
+            closeManually: true,
+            openCloseDial: isDialOpen,
 
-                onPress: () => {
-                  if (!hasTranslated)
-                    {
-                      isDialOpen.value = false,
-                    }
-                  else
-                    {
-                      recognizedText == ''
-                          ? {
-                              isDialOpen.value = false,
-                              showToast(
-                                  'No text detected. The image may be too dark or blurry.'),
-                            }
-                          : isDialOpen.value = true
-                    }
-                },
-                // buttonSize: const Size(45, 45),
-                // spacing: 12,
-                // elevation: AppGlobal.screenHeight * 0.08,
-                animatedIcon: AnimatedIcons.add_event,
-                overlayColor: AppColor.kColorPeriDarkest,
-                overlayOpacity: 0.2,
-                children: [
-                  // if (recognizedText == '') ...[
-                  SpeedDialChild(
-                      child: Icon(Features.toggle.icon),
-                      label: Features.toggle.text,
-                      onTap: () {
-                        if (mounted) {
-                          setState(() => showOverlay = !showOverlay);
-                        }
-                      }),
-                  SpeedDialChild(
-                      child: Icon(Features.change.icon),
-                      label: Features.change.text,
-                      onTap: () {
-                        if (withRomanization) {
-                          if (mounted) {
-                            setState(() => showRomanized = !showRomanized);
-                          }
-                        } else {
+            onPress: () => {
+              if (!hasTranslated)
+                {
+                  isDialOpen.value = false,
+                }
+              else
+                {
+                  recognizedText == ''
+                      ? {
+                          isDialOpen.value = false,
                           showToast(
-                              'Not applicable. Target language is not Chinese.');
+                              'No text detected. The image\nmay be too dark or blurry.'),
                         }
-                      }),
-                  SpeedDialChild(
-                      child: Icon(Features.copy.icon),
-                      label: Features.copy.text,
-                      onTap: () {
-                        if (showOverlay) {
-                          if (showRomanized) {
-                            copiedText = romanizedText;
-                            textLabel = 'Romanized';
-                          } else {
-                            copiedText = translatedText;
-                            textLabel = 'Translated';
-                          }
-                        } else {
-                          copiedText = recognizedText;
-                          textLabel = 'Recognized';
-                        }
+                      : isDialOpen.value = true
+                }
+            },
+            // buttonSize: const Size(45, 45),
+            // spacing: 12,
+            // elevation: AppGlobal.screenHeight * 0.08,
+            animatedIcon: AnimatedIcons.menu_close,
+            overlayColor: AppColor.kColorPeriDarkest,
+            overlayOpacity: 0.2,
+            children: [
+              SpeedDialChild(
+                  child: Icon(Features.toggle.icon,
+                      color: AppColor.kColorPeriLightest),
+                  backgroundColor: AppColor.kColorPeriDarker,
+                  // label: Features.toggle.text,
+                  onTap: () {
+                    if (mounted) {
+                      setState(() => showOverlay = !showOverlay);
+                    }
+                  }),
+              SpeedDialChild(
+                  child: Icon(Features.change.icon,
+                      color: AppColor.kColorPeriLightest),
+                  backgroundColor: AppColor.kColorPeriDark,
+                  // label: Features.change.text,
+                  onTap: () {
+                    if (withRomanization) {
+                      if (mounted) {
+                        setState(() => showRomanized = !showRomanized);
+                      }
+                    } else {
+                      showToast(
+                          'Not applicable. Target\nlanguage is not Chinese.');
+                    }
+                  }),
+              SpeedDialChild(
+                  child: Icon(Features.copy.icon,
+                      color: AppColor.kColorPeriLightest),
+                  backgroundColor: AppColor.kColorPeri,
+                  // label: Features.copy.text,
+                  onTap: () {
+                    if (showOverlay) {
+                      if (showRomanized) {
+                        copiedText = romanizedText;
+                        textLabel = 'Romanized';
+                      } else {
+                        copiedText = translatedText;
+                        textLabel = 'Translated';
+                      }
+                    } else {
+                      copiedText = recognizedText;
+                      textLabel = 'Recognized';
+                    }
 
-                        Clipboard.setData(ClipboardData(text: copiedText))
-                            .then((_) {
-                          return showToast('$textLabel text copied');
-                        });
-                      }),
-                  SpeedDialChild(
-                      child: Icon(Features.listen.icon),
-                      label: Features.listen.text,
-                      onTap: () {
-                        if (mounted) setState(() => playAudio = true);
+                    Clipboard.setData(ClipboardData(text: copiedText))
+                        .then((_) {
+                      return showToast('$textLabel text copied');
+                    });
+                  }),
+              SpeedDialChild(
+                  child: Icon(Features.listen.icon,
+                      color: AppColor.kColorPeriLightest),
+                  backgroundColor: AppColor.kColorPeriLight,
+                  // label: Features.listen.text,
+                  onTap: () {
+                    if (mounted) setState(() => playAudio = true);
 
-                        () async {
-                          if (!showOverlay) {
-                            flutterTts.setLanguage(speechSourceTag);
-                            await flutterTts.speak(recognizedText);
-                          } else {
-                            flutterTts.setLanguage(speechTargetTag);
-                            await flutterTts.speak(translatedText);
-                          }
-                        }();
-                      }),
-                  SpeedDialChild(
-                      labelStyle: TextStyle(fontSize: 11),
-                      child: Icon(Features.save.icon),
-                      label: Features.save.text,
-                      onTap: () {
-                        () async {
-                          if (!showOverlay) {
-                            textLabel = 'Original';
-                            await GallerySaver.saveImage(
-                                widget.inputImage.path);
-                          } else {
-                            showRomanized
-                                ? textLabel = 'Romanized'
-                                : textLabel = 'Translated';
+                    () async {
+                      if (!showOverlay) {
+                        flutterTts.setLanguage(speechSourceTag);
+                        await flutterTts.speak(recognizedText);
+                      } else {
+                        flutterTts.setLanguage(speechTargetTag);
+                        await flutterTts.speak(translatedText);
+                      }
+                    }();
+                  }),
+              SpeedDialChild(
+                  child: Icon(Features.save.icon,
+                      color: AppColor.kColorPeriLightest),
+                  backgroundColor: AppColor.kColorPeriLighter,
+                  // label: Features.save.text,
+                  onTap: () {
+                    () async {
+                      if (!showOverlay) {
+                        textLabel = 'Original';
+                        await GallerySaver.saveImage(widget.inputImage.path);
+                      } else {
+                        showRomanized
+                            ? textLabel = 'Romanized'
+                            : textLabel = 'Translated';
 
-                            RenderRepaintBoundary boundary =
-                                globalKey.currentContext?.findRenderObject()
-                                    as RenderRepaintBoundary;
-                            ui.Image image = await boundary.toImage();
+                        RenderRepaintBoundary boundary =
+                            globalKey.currentContext?.findRenderObject()
+                                as RenderRepaintBoundary;
+                        ui.Image image = await boundary.toImage();
 
-                            // Uint8List pngBytes = byteData.buffer.asUint8List();
+                        // Uint8List pngBytes = byteData.buffer.asUint8List();
 
-                            ByteData? byteData = await image.toByteData(
-                                format: ui.ImageByteFormat.png);
+                        ByteData? byteData = await image.toByteData(
+                            format: ui.ImageByteFormat.png);
 
-                            await ImageGallerySaver.saveImage(
-                                byteData!.buffer.asUint8List());
-                          }
-                          if (!mounted) return;
+                        await ImageGallerySaver.saveImage(
+                            byteData!.buffer.asUint8List());
+                      }
+                      if (!mounted) return;
 
-                          showToast('$textLabel image saved');
-                        }();
-                      }),
-                  // ]
-                ],
-              )),
+                      showToast('$textLabel image saved');
+                    }();
+                  }),
+            ],
+          )),
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
       // floatingActionButton: ,
@@ -435,7 +437,11 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                               ))
                             ])
                           : InteractiveViewer(
+                              // clipBehavior: ui.Clip.hardEdge,
+                              boundaryMargin:
+                                  const EdgeInsets.all(double.infinity),
                               maxScale: 4,
+                              minScale: 0.5,
                               child: !showOverlay
                                   ? imageDisplay()
                                   : widget.index == 0
@@ -474,8 +480,9 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     Fluttertoast.showToast(
         msg: message,
         toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black45,
+        gravity: ToastGravity.TOP,
+        fontSize: 10,
+        backgroundColor: AppColor.kColorPeriDarkestOp,
         textColor: Colors.white);
   }
 
@@ -500,72 +507,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                 ]))));
   }
 
-  Widget featureMenu(BuildContext context) {
-    return SizedBox(
-        height: AppGlobal.screenHeight * 0.275,
-        child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-          const LanguageBar(),
-          Container(
-              width: AppGlobal.screenWidth,
-              padding: const EdgeInsets.only(top: 10.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  width: 0.0,
-                  color: Colors.white,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    inset: true,
-                    color: Colors.grey.withOpacity(0.6),
-                    blurStyle: BlurStyle.inner,
-                    spreadRadius: -5.0,
-                    blurRadius: 4,
-                    offset: const Offset(0, 10), // changes position of shadow
-                  ),
-                ],
-              ),
-              child: Center(
-                  child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                height: 5.0,
-                width: 30.0,
-                decoration: BoxDecoration(
-                    color: Colors.grey[350],
-                    borderRadius: const BorderRadius.all(Radius.circular(5.0))),
-              ))),
-          Container(
-            width: AppGlobal.screenWidth,
-            height: AppGlobal.screenHeight * 0.12,
-            decoration: BoxDecoration(
-                color: AppColor.kColorPeriLight,
-                border: Border.all(
-                  width: 0.0,
-                  color: AppColor.kColorPeriLight,
-                )),
-            child:
-
-                // ListView.builder(
-                // scrollDirection: Axis.horizontal,
-                // itemCount: Features.features.length,
-                // itemBuilder: (context, index) =>
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              ...Features.features.map((Feature feat) => buildFeature(feat))
-            ]),
-          ),
-          // Container(
-          //     padding: const EdgeInsets.only(left: 20, right: 20),
-          //     width: MediaQuery.of(context).size.width,
-          //     height: MediaQuery.of(context).size.height * 0.15,
-          //     color: Colors.white,
-          //     child: ListView(children: [
-          //       Text("RECOGNIZED: $recognizedText"),
-          //       Text("TRANSLATED: $translatedText"),
-          //       Text("ROMANIZED: $romanizedText"),
-          //     ]))
-        ]));
-  }
-
   Widget imageDisplay() {
     return widget.index == 0
         ? Center(child: image)
@@ -579,7 +520,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
           height: 50,
           alignment: Alignment.center,
           margin:
-              EdgeInsets.only(top: appBar.preferredSize.height + 10, right: 10),
+              EdgeInsets.only(top: appBar.preferredSize.height + 20, right: 20),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
@@ -593,7 +534,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
           height: 50,
           alignment: Alignment.center,
           margin:
-              EdgeInsets.only(top: appBar.preferredSize.height + 10, right: 10),
+              EdgeInsets.only(top: appBar.preferredSize.height + 20, right: 20),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
@@ -602,121 +543,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             size: 30,
             color: AppColor.kColorPeriLight,
           )));
-
-  Widget buildFeature(Feature feat) => Container(
-      margin: const EdgeInsets.only(left: 1.5, right: 1.5),
-      child: Column(children: [
-        ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              primary: Colors.black,
-              // side: const BorderSide(width: 3.0, color: Colors.white),
-              shape: const CircleBorder(),
-
-              padding: const EdgeInsets.all(10.0),
-              // shape: RoundedRectangleBorder(
-              //     borderRadius: BorderRadius.circular(18.0)),
-              // side: const BorderSide(
-              //   color: Colors.grey,
-              //   width: 1.0,
-              //   style: BorderStyle.solid,
-            ),
-            onPressed: () {
-              if (recognizedText == '') {
-                showToast(
-                    'No text detected. The image may be too dark or blurry.');
-              } else if (feat == Features.toggle) {
-                if (mounted) setState(() => showOverlay = !showOverlay);
-              } else if (feat == Features.change) {
-                if (withRomanization) {
-                  if (mounted) setState(() => showRomanized = !showRomanized);
-                } else {
-                  showToast(
-                      '! Not applicable. Target language is not Chinese.');
-                }
-              } else if (feat == Features.copy) {
-                if (showOverlay) {
-                  if (showRomanized) {
-                    copiedText = romanizedText;
-                    textLabel = 'Romanized';
-                  } else {
-                    copiedText = translatedText;
-                    textLabel = 'Translated';
-                  }
-                } else {
-                  copiedText = recognizedText;
-                  textLabel = 'Recognized';
-                }
-
-                Clipboard.setData(ClipboardData(text: copiedText)).then((_) {
-                  return showToast('$textLabel text copied');
-                  // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  //   behavior: SnackBarBehavior.floating,
-                  //   margin: const EdgeInsets.only(top: 10.0),
-                  //   content: Text("$textLabel copied to clipboard"),
-                  // )
-                  // );
-                });
-              } else if (feat == Features.listen) {
-                if (mounted) setState(() => playAudio = true);
-                // debugPrint('weh $showVolumeSign');
-                // ftoast.init(context);
-
-                // ftoast.showToast(
-                //     child: const Material(
-                //         color: Colors.black45,
-                //         child: Icon(Icons.volume_up, color: Colors.white)));
-                () async {
-                  if (!showOverlay) {
-                    flutterTts.setLanguage(speechSourceTag);
-                    await flutterTts.speak(recognizedText);
-                  } else {
-                    flutterTts.setLanguage(speechTargetTag);
-                    await flutterTts.speak(translatedText);
-                  }
-                }();
-                // debugPrint('weh $showVolumeSign');
-
-                // ftoast.removeCustomToast();
-              } else if (feat == Features.save) {
-                () async {
-                  if (!showOverlay) {
-                    textLabel = 'Original';
-                    await GallerySaver.saveImage(widget.inputImage.path);
-                  } else {
-                    showRomanized
-                        ? textLabel = 'Romanized'
-                        : textLabel = 'Translated';
-
-                    RenderRepaintBoundary boundary = globalKey.currentContext
-                        ?.findRenderObject() as RenderRepaintBoundary;
-                    ui.Image image = await boundary.toImage();
-
-                    // Uint8List pngBytes = byteData.buffer.asUint8List();
-
-                    ByteData? byteData =
-                        await image.toByteData(format: ui.ImageByteFormat.png);
-
-                    await ImageGallerySaver.saveImage(
-                        byteData!.buffer.asUint8List());
-                  }
-                  if (!mounted) return;
-
-                  showToast('$textLabel image saved');
-                }();
-              }
-            },
-            child: Icon(
-              feat.icon,
-              size: 30,
-              color: Colors.white,
-            )),
-        const SizedBox(height: 5),
-        Text(
-          feat.text,
-          style: const TextStyle(color: Colors.black, fontSize: 8),
-          textAlign: TextAlign.center,
-        )
-      ]));
 
   getLangTag(int index) {
     if (mounted) {

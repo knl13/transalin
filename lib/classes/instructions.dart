@@ -30,7 +30,7 @@ class Instructions {
       icon: Icons.settings_rounded,
       heading: 'Feature',
       text:
-          'The features provided are toggle overlay visibility, change Hanzi to Latin script, copy and listen to the text, pinch to zoom in/out, and save the image with or without the overlay.');
+          'The features provided are toggle overlay visibility, change Hanzi to Latin script, copy and listen to text, pinch to zoom in or out, and save the image with or without the overlay.');
   static const interface = Instruction(
       icon: Icons.layers_outlined,
       heading: 'Interface',

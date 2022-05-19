@@ -7,7 +7,9 @@ import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/screens/input_screen.dart';
 
 class InstructionScreen extends StatelessWidget {
-  const InstructionScreen({super.key});
+  const InstructionScreen({super.key, required this.pop});
+
+  final bool pop;
 
   Widget buildInstruction(Instruction inst) => Container(
       width: AppGlobal.screenWidth * 0.6,
@@ -60,10 +62,20 @@ class InstructionScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColor.kColorPeriDarker))),
           SizedBox(height: AppGlobal.screenHeight * 0.025),
-          TextButton(
-              onPressed: () async => await Navigator.of(context)
-                  .pushReplacement(MaterialPageRoute(
-                      builder: (context) => const InputScreen())),
+
+          OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                primary: AppColor.kColorPeriLight,
+                side: const BorderSide(
+                    width: 0.0, color: AppColor.kColorPeriLightest),
+                shape: const CircleBorder(),
+                // padding: const EdgeInsets.all(1.0),
+              ),
+              onPressed: () async => pop
+                  ? Navigator.of(context).pop()
+                  : await Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                          builder: (context) => const InputScreen())),
               child: SizedBox(
                   width: AppGlobal.screenWidth * 0.5,
                   child: Lottie.asset('assets/thumb_up.json'))),

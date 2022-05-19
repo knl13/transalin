@@ -96,10 +96,10 @@ class DownloadScreenState extends State<DownloadScreen> {
     }
   }
 
-  void goToStartScreen() {
+  void goToInstructionScreen() {
     () async {
-      await Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const InstructionScreen()));
+      await Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => const InstructionScreen(pop: false)));
     }();
   }
 
@@ -107,7 +107,9 @@ class DownloadScreenState extends State<DownloadScreen> {
   Widget build(BuildContext context) {
     AppGlobal.screenWidth = MediaQuery.of(context).size.width;
     AppGlobal.screenHeight = MediaQuery.of(context).size.height;
-    if (isChineseEnglishDownloaded && isFilipinoDownloaded) goToStartScreen();
+    if (isChineseEnglishDownloaded && isFilipinoDownloaded) {
+      goToInstructionScreen();
+    }
 
     return Scaffold(
       backgroundColor: AppColor.kColorPeriLightest,

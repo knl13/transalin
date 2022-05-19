@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/providers/camera_controller_listener.dart';
+import 'package:transalin/screens/instruction_screen.dart';
 import 'package:transalin/screens/output_screen.dart';
 import 'package:transalin/widgets/language_bar.dart';
 
@@ -35,6 +36,7 @@ class InputScreenState extends State<InputScreen> {
         AppGlobal.camera,
         ResolutionPreset.max, // Define the resolution to use.
         enableAudio: false);
+
     _initializeControllerFuture = _controller.initialize();
   }
 
@@ -63,16 +65,25 @@ class InputScreenState extends State<InputScreen> {
         // backgroundColor: AppColor.kColorPeriDarkest,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-            title: const Text('TranSalin',
-                style: TextStyle(shadows: [
-                  Shadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      offset: Offset(0, 0))
-                ])),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0),
+          title: const Text('TranSalin',
+              style: TextStyle(shadows: [AppGlobal.shadowStyle])),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+                splashColor: AppColor.kColorPeriLight,
+                splashRadius: 14,
+                icon: const Icon(Icons.help_outline_rounded,
+                    size: 20,
+                    color: Colors.white,
+                    shadows: [AppGlobal.shadowStyle]),
+                onPressed: () async => await Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const InstructionScreen(pop: true))))
+          ],
+        ),
         // You must wait until the controller is initialized before displaying the
         // cameras preview. Use a FutureBuilder to display a loading spinner until the
         // controller has finished initializing.
@@ -128,7 +139,7 @@ class InputScreenState extends State<InputScreen> {
                           child: IconButton(
                               iconSize: 30,
                               color: isControllerInitialized
-                                  ? AppColor.kColorPeriLight
+                                  ? AppColor.kColorWhite
                                   : AppColor.kColorPeri,
                               // icon: const Icon(Icons.add_to_photos),
                               icon: const Icon(Icons.collections_rounded),
@@ -153,15 +164,14 @@ class InputScreenState extends State<InputScreen> {
                           ? OutlinedButton(
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
-                                    width: 3.0,
-                                    color: AppColor.kColorPeriLight),
+                                    width: 3.0, color: AppColor.kColorWhite),
                                 shape: const CircleBorder(),
                                 padding: const EdgeInsets.all(1.0),
                               ),
                               child: const Icon(
                                 Icons.circle_rounded,
                                 size: 55,
-                                color: AppColor.kColorPeriLight,
+                                color: AppColor.kColorWhite,
                               ),
                               onPressed: () async {
                                 // Take the Picture in a try / catch block. If anything goes wrong,
@@ -200,7 +210,7 @@ class InputScreenState extends State<InputScreen> {
                                   ? const Icon(Icons.flash_on_rounded)
                                   : const Icon(Icons.flash_off_rounded),
                               iconSize: 30,
-                              color: AppColor.kColorPeriLight,
+                              color: AppColor.kColorWhite,
                               onPressed: () {
                                 !isFlashOn
                                     ? setState(() => isFlashOn = true)
