@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart' hide BoxDecoration, BoxShadow;
 import 'package:flutter/services.dart';
 import 'package:flutter_inset_box_shadow/flutter_inset_box_shadow.dart';
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gallery_saver/gallery_saver.dart';
@@ -90,6 +91,8 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     }
   }
 
+  ValueNotifier<bool> isDialOpen = ValueNotifier(false);
+
   @override
   void initState() {
     super.initState();
@@ -112,8 +115,14 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
       centerTitle: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      actions: [
+        IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            // color: AppColor.kColorPeriLightest,
+            onPressed: () {})
+      ],
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back,
+        icon: const Icon(Icons.arrow_back_rounded,
             size: 25,
             color: Colors.white,
             shadows: [
@@ -139,15 +148,16 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
       }
     });
 
-    getResults().then((_) {
-      if (mounted) {
-        showModalBottomSheet(
-            barrierColor: Colors.black.withOpacity(0.2),
-            backgroundColor: Colors.transparent,
-            context: context,
-            builder: (builder) => featureMenu(context));
-      }
-    });
+    getResults();
+    // .then((_) {
+    //   if (mounted) {
+    //     showModalBottomSheet(
+    //         barrierColor: Colors.black.withOpacity(0.2),
+    //         backgroundColor: Colors.transparent,
+    //         context: context,
+    //         builder: (builder) => featureMenu(context));
+    //   }
+    // });
   }
 
   @override
@@ -266,43 +276,207 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: appBar,
+      floatingActionButton:
+          //  Center(
+          // child:
+          Container(
+              padding: EdgeInsets.only(bottom: (AppGlobal.screenHeight * 0.08)),
+              alignment: Alignment.bottomRight,
+              //         // height: 100,
+              //         // width: 100,
+              child: SpeedDial(
+                backgroundColor: AppColor.kColorPeri,
+                spacing: 3,
+                spaceBetweenChildren: 3,
+                closeManually: true,
+                openCloseDial: isDialOpen,
+
+                onPress: () => {
+                  if (!hasTranslated)
+                    {
+                      isDialOpen.value = false,
+                    }
+                  else
+                    {
+                      recognizedText == ''
+                          ? {
+                              isDialOpen.value = false,
+                              showToast(
+                                  'No text detected. The image may be too dark or blurry.'),
+                            }
+                          : isDialOpen.value = true
+                    }
+                },
+                // buttonSize: const Size(45, 45),
+                // spacing: 12,
+                // elevation: AppGlobal.screenHeight * 0.08,
+                animatedIcon: AnimatedIcons.add_event,
+                overlayColor: AppColor.kColorPeriDarkest,
+                overlayOpacity: 0.2,
+                children: [
+                  // if (recognizedText == '') ...[
+                  SpeedDialChild(
+                      child: Icon(Features.toggle.icon),
+                      label: Features.toggle.text,
+                      onTap: () {
+                        if (mounted) {
+                          setState(() => showOverlay = !showOverlay);
+                        }
+                      }),
+                  SpeedDialChild(
+                      child: Icon(Features.change.icon),
+                      label: Features.change.text,
+                      onTap: () {
+                        if (withRomanization) {
+                          if (mounted) {
+                            setState(() => showRomanized = !showRomanized);
+                          }
+                        } else {
+                          showToast(
+                              'Not applicable. Target language is not Chinese.');
+                        }
+                      }),
+                  SpeedDialChild(
+                      child: Icon(Features.copy.icon),
+                      label: Features.copy.text,
+                      onTap: () {
+                        if (showOverlay) {
+                          if (showRomanized) {
+                            copiedText = romanizedText;
+                            textLabel = 'Romanized';
+                          } else {
+                            copiedText = translatedText;
+                            textLabel = 'Translated';
+                          }
+                        } else {
+                          copiedText = recognizedText;
+                          textLabel = 'Recognized';
+                        }
+
+                        Clipboard.setData(ClipboardData(text: copiedText))
+                            .then((_) {
+                          return showToast('$textLabel text copied');
+                        });
+                      }),
+                  SpeedDialChild(
+                      child: Icon(Features.listen.icon),
+                      label: Features.listen.text,
+                      onTap: () {
+                        if (mounted) setState(() => playAudio = true);
+
+                        () async {
+                          if (!showOverlay) {
+                            flutterTts.setLanguage(speechSourceTag);
+                            await flutterTts.speak(recognizedText);
+                          } else {
+                            flutterTts.setLanguage(speechTargetTag);
+                            await flutterTts.speak(translatedText);
+                          }
+                        }();
+                      }),
+                  SpeedDialChild(
+                      labelStyle: TextStyle(fontSize: 11),
+                      child: Icon(Features.save.icon),
+                      label: Features.save.text,
+                      onTap: () {
+                        () async {
+                          if (!showOverlay) {
+                            textLabel = 'Original';
+                            await GallerySaver.saveImage(
+                                widget.inputImage.path);
+                          } else {
+                            showRomanized
+                                ? textLabel = 'Romanized'
+                                : textLabel = 'Translated';
+
+                            RenderRepaintBoundary boundary =
+                                globalKey.currentContext?.findRenderObject()
+                                    as RenderRepaintBoundary;
+                            ui.Image image = await boundary.toImage();
+
+                            // Uint8List pngBytes = byteData.buffer.asUint8List();
+
+                            ByteData? byteData = await image.toByteData(
+                                format: ui.ImageByteFormat.png);
+
+                            await ImageGallerySaver.saveImage(
+                                byteData!.buffer.asUint8List());
+                          }
+                          if (!mounted) return;
+
+                          showToast('$textLabel image saved');
+                        }();
+                      }),
+                  // ]
+                ],
+              )),
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
+      // floatingActionButton: ,
       body: Stack(children: [
-        !hasTranslated
-            ? Stack(children: [
-                imageDisplay(),
-                const Center(child: CircularProgressIndicator())
-              ])
-            : InteractiveViewer(
-                maxScale: 4,
-                child: !showOverlay
-                    ? imageDisplay()
-                    : widget.index == 0
-                        ? Center(child: overlayDisplay())
-                        : Align(
-                            alignment: Alignment.topCenter,
-                            child: overlayDisplay())),
-        !playAudio
-            ? Container()
-            : showVolumeSign
-                ? volumeSign()
-                : loadingSign(),
-        Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-          GestureDetector(
-              onVerticalDragStart: (DragStartDetails details) {
-                if (mounted) {
-                  showModalBottomSheet(
-                      barrierColor: Colors.black.withOpacity(0.2),
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (context) => featureMenu(context));
-                }
-              },
-              child: const LanguageBar()),
-        ])
+        SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height * 0.92,
+            child: ClipRRect(
+                // clipBehavior: Clip.,
+                borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20)),
+                child: Container(
+                    color: AppColor.kColorPeriLighter,
+                    child: Stack(children: [
+                      !hasTranslated
+                          ? Stack(children: [
+                              imageDisplay(),
+                              const Center(
+                                  child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColor.kColorPeriLight),
+                              ))
+                            ])
+                          : InteractiveViewer(
+                              maxScale: 4,
+                              child: !showOverlay
+                                  ? imageDisplay()
+                                  : widget.index == 0
+                                      ? Center(child: overlayDisplay())
+                                      : Align(
+                                          alignment: Alignment.topCenter,
+                                          child: overlayDisplay())),
+                      !playAudio
+                          ? Container()
+                          : showVolumeSign
+                              ? volumeSign()
+                              : loadingSign(),
+                    ])))),
+
+        // Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+        //   GestureDetector(
+        //       onVerticalDragStart: (DragStartDetails details) {
+        //         if (mounted) {
+        //           showModalBottomSheet(
+        //               barrierColor: Colors.black.withOpacity(0.2),
+        //               backgroundColor: Colors.transparent,
+        //               context: context,
+        //               builder: (context) => featureMenu(context));
+        //         }
+        //       },
+        Container(alignment: Alignment.bottomCenter, child: const LanguageBar())
+        // ),
+        // ])
       ]),
     );
+  }
+
+  Future showToast(String message) async {
+    await Fluttertoast.cancel();
+
+    Fluttertoast.showToast(
+        msg: message,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.black45,
+        textColor: Colors.white);
   }
 
   FittedBox overlayDisplay() {
@@ -424,9 +598,9 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
           child: const Icon(
-            Icons.volume_up,
+            Icons.volume_up_rounded,
             size: 30,
-            color: Colors.blue,
+            color: AppColor.kColorPeriLight,
           )));
 
   Widget buildFeature(Feature feat) => Container(
@@ -448,25 +622,16 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             ),
             onPressed: () {
               if (recognizedText == '') {
-                Fluttertoast.showToast(
-                    msg:
-                        'No text detected. The image may be too dark or blurry.',
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.CENTER,
-                    backgroundColor: Colors.black45,
-                    textColor: Colors.white);
+                showToast(
+                    'No text detected. The image may be too dark or blurry.');
               } else if (feat == Features.toggle) {
                 if (mounted) setState(() => showOverlay = !showOverlay);
               } else if (feat == Features.change) {
                 if (withRomanization) {
                   if (mounted) setState(() => showRomanized = !showRomanized);
                 } else {
-                  Fluttertoast.showToast(
-                      msg: '! Not applicable. Target language is not Chinese.',
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      backgroundColor: Colors.black45,
-                      textColor: Colors.white);
+                  showToast(
+                      '! Not applicable. Target language is not Chinese.');
                 }
               } else if (feat == Features.copy) {
                 if (showOverlay) {
@@ -483,12 +648,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                 }
 
                 Clipboard.setData(ClipboardData(text: copiedText)).then((_) {
-                  return Fluttertoast.showToast(
-                      msg: '$textLabel text copied',
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      backgroundColor: Colors.black45,
-                      textColor: Colors.white);
+                  return showToast('$textLabel text copied');
                   // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   //   behavior: SnackBarBehavior.floating,
                   //   margin: const EdgeInsets.only(top: 10.0),
@@ -541,12 +701,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                   }
                   if (!mounted) return;
 
-                  Fluttertoast.showToast(
-                      msg: '$textLabel image saved',
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      backgroundColor: Colors.black45,
-                      textColor: Colors.white);
+                  showToast('$textLabel image saved');
                 }();
               }
             },
@@ -593,7 +748,9 @@ class BoxPainter extends CustomPainter {
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
     bytes = fileImage.readAsBytesSync();
-    final paint = Paint()..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = AppColor.kColorPeriDarkest;
     // canvas = Canvas(recorder);
     // canvasCopy = Canvas(recorder);
 
@@ -621,7 +778,6 @@ class BoxPainter extends CustomPainter {
         rectangle.lineTo(points[2].dx, points[2].dy);
         rectangle.lineTo(points[3].dx, points[3].dy);
 
-        paint.color = Colors.black;
         // paint.color = Color(abgrToArgb(imageLibImage!
         // .getPixel(points[2].dx.toInt(), points[2].dy.toInt())));
         canvas.drawPath(rectangle, paint);

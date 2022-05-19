@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/classes/language.dart';
 import 'package:transalin/classes/languages.dart';
+import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 
@@ -30,13 +31,14 @@ class _LanguageOptionsState extends State<LanguageOptions> {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<Language>(
+        color: AppColor.kColorPeriDarkest,
         constraints: const BoxConstraints(maxWidth: 155),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(
             Radius.circular(10),
           ),
         ),
-        offset: const Offset(0, -180),
+        offset: const Offset(0, -185),
         itemBuilder: (context) => [
               ...Languages.languages
                   .map((Language lang) => PopupMenuItem<Language>(
@@ -49,7 +51,9 @@ class _LanguageOptionsState extends State<LanguageOptions> {
                           fit: BoxFit.fitWidth,
                         ),
                         const SizedBox(width: 10),
-                        Text(lang.text)
+                        Text(lang.text,
+                            style: const TextStyle(
+                                color: AppColor.kColorPeriLightest))
                       ])))
                   .toList()
             ],
@@ -58,6 +62,7 @@ class _LanguageOptionsState extends State<LanguageOptions> {
         child: Text(
           watchLanguage(widget.index),
           textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColor.kColorPeriLightest),
         ));
   }
 }

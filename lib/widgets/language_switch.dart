@@ -28,8 +28,9 @@ class LanguageSwitch extends StatelessWidget {
         },
         icon: const Icon(
           // Icons.autorenew,
-          Icons.swap_horiz,
-          color: AppColor.kColorPeriDarkest,
+          Icons.swap_horiz_rounded,
+          color: AppColor.kColorPeriLightest,
+          size: 30,
         ));
   }
 }

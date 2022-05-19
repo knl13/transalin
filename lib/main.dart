@@ -3,11 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:transalin/classes/features.dart';
-import 'package:transalin/classes/instruction.dart';
-import 'package:transalin/classes/instructions.dart';
 import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/constants/app_language.dart';
@@ -15,6 +11,7 @@ import 'package:transalin/providers/camera_controller_listener.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 import 'package:transalin/screens/input_screen.dart';
+import 'package:transalin/screens/instruction_screen.dart';
 
 late List<CameraDescription> cameras;
 late TranslateLanguageModelManager modelManager;
@@ -26,10 +23,9 @@ Future<void> main() async {
   WidgetsFlutterBinding
       .ensureInitialized(); //ensure initialization of plugin services for availableCameras() function
   cameras = await availableCameras(); //get list of device's available cameras
+  AppGlobal.camera = cameras.first; //use first camera from the list
 
-  checkModels();
-  debugPrint('wewew');
-  runApp(MyApp(cameras: cameras));
+  checkModels().then((_) => runApp(const MyApp()));
 }
 
 checkModels() async {
@@ -45,9 +41,7 @@ checkModels() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key, required this.cameras}) : super(key: key);
-
-  final List<CameraDescription> cameras;
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -59,10 +53,10 @@ class MyApp extends StatelessWidget {
         ],
         child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(scaffoldBackgroundColor: AppColor.kColorBlack),
+            theme:
+                ThemeData(scaffoldBackgroundColor: AppColor.kColorPeriDarkest),
             home: modelsAreDownloaded
-                ? InputScreen(
-                    cameras: cameras) //pass cameras to InputScreen widget
+                ? const InputScreen() //pass cameras to InputScreen widget
                 : const DownloadScreen()));
   }
 }
@@ -76,12 +70,12 @@ class DownloadScreen extends StatefulWidget {
 
 class DownloadScreenState extends State<DownloadScreen> {
   Icon doneSymbol = const Icon(
-    Icons.download_done,
-    color: AppColor.kColorPeriDarker,
+    Icons.download_done_rounded,
+    color: AppColor.kColorPeriDark,
     size: 30,
   );
   Icon downloadingSymbol = const Icon(
-    Icons.downloading,
+    Icons.downloading_rounded,
     color: AppColor.kColorPeriLight,
     size: 30,
   );
@@ -103,10 +97,10 @@ class DownloadScreenState extends State<DownloadScreen> {
   }
 
   void goToStartScreen() {
-    Future.delayed(const Duration(seconds: 1), () async {
-      await Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => const StartScreen()));
-    });
+    () async {
+      await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const InstructionScreen()));
+    }();
   }
 
   @override
@@ -116,18 +110,17 @@ class DownloadScreenState extends State<DownloadScreen> {
     if (isChineseEnglishDownloaded && isFilipinoDownloaded) goToStartScreen();
 
     return Scaffold(
-      backgroundColor: AppColor.kColorPeriLighter,
+      backgroundColor: AppColor.kColorPeriLightest,
       body: Center(
           child: Column(
-        // crossAxisAlignment: CrossAxisAlignment.center,
-        // mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: AppGlobal.screenHeight * 0.155),
           const FittedBox(
               child: Text(
                   'Welcome! Let\'s first download\nthe translation language models.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColor.kColorPeriDarker))),
+                  style: TextStyle(color: AppColor.kColorPeri))),
           SizedBox(height: AppGlobal.screenHeight * 0.1),
           SpinKitFadingGrid(
             size: AppGlobal.screenWidth * 0.5,
@@ -138,6 +131,12 @@ class DownloadScreenState extends State<DownloadScreen> {
                 Colors.indigo.shade900,
                 Colors.indigo.shade400,
                 Colors.indigo.shade800,
+                // AppColor.kColorPeriLighter,
+                // AppColor.kColorPeriLight,
+                // AppColor.kColorPeri,
+                // AppColor.kColorPeriDark,
+                // AppColor.kColorPeriDarker,
+                // AppColor.kColorPeriDarkest,
               ];
 
               final color = colors[index % colors.length];
@@ -163,7 +162,7 @@ class DownloadScreenState extends State<DownloadScreen> {
                               style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('中文 (Zhōngwén)',
                               style: TextStyle(
-                                  color: AppColor.kColorPeriDarker,
+                                  color: AppColor.kColorPeriDark,
                                   fontWeight: FontWeight.bold)),
                     ]),
                     const SizedBox(height: 10),
@@ -177,7 +176,7 @@ class DownloadScreenState extends State<DownloadScreen> {
                               style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('English language',
                               style: TextStyle(
-                                  color: AppColor.kColorPeriDarker,
+                                  color: AppColor.kColorPeriDark,
                                   fontWeight: FontWeight.bold)),
                     ]),
                     const SizedBox(height: 10),
@@ -189,116 +188,10 @@ class DownloadScreenState extends State<DownloadScreen> {
                               style: TextStyle(color: AppColor.kColorPeriLight))
                           : const Text('wikang Filipino',
                               style: TextStyle(
-                                  color: AppColor.kColorPeriDarker,
+                                  color: AppColor.kColorPeriDark,
                                   fontWeight: FontWeight.bold)),
                     ]),
                   ]))
-        ],
-      )),
-    );
-  }
-}
-
-class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
-
-  Widget buildInstruction(Instruction inst) => Container(
-      width: AppGlobal.screenWidth * 0.6,
-      height: AppGlobal.screenWidth * 0.5,
-      decoration: const BoxDecoration(
-          color: AppColor.kColorPeriDarkest,
-          borderRadius: BorderRadius.all(Radius.circular(15))),
-      margin: const EdgeInsets.only(left: 10),
-      padding: const EdgeInsets.all(15),
-      child: Column(children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                  shape: BoxShape.circle, color: AppColor.kColorWhite),
-              child: Icon(
-                inst.icon,
-                size: 20,
-                color: AppColor.kColorPeriLight,
-              )),
-          const SizedBox(width: 10),
-          FittedBox(
-            child: Text(
-              inst.heading,
-              style: const TextStyle(
-                  color: AppColor.kColorWhite, fontWeight: FontWeight.bold),
-            ),
-          )
-        ]),
-        const SizedBox(height: 10),
-        Text(
-          inst.text,
-          // softWrap: true,
-          // overflow: TextOverflow.visible,
-          style:
-              const TextStyle(color: AppColor.kColorPeriLighter, fontSize: 8),
-        )
-      ]));
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColor.kColorPeriLighter,
-      body: Center(
-          child: Column(
-        // crossAxisAlignment: CrossAxisAlignment.center,
-        // mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          SizedBox(height: AppGlobal.screenHeight * 0.155),
-          const FittedBox(
-              child: Text(
-                  'Yep, we\'re good to go!\nYou can use the app offline.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColor.kColorPeriDarker))),
-          SizedBox(height: AppGlobal.screenHeight * 0.025),
-          TextButton(
-              onPressed: () async => await Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (context) => InputScreen(cameras: cameras))),
-              child: SizedBox(
-                  width: AppGlobal.screenWidth * 0.5,
-                  child: Lottie.asset('assets/thumb_up.json'))),
-          SizedBox(height: AppGlobal.screenHeight * 0.025),
-
-          Container(
-              width: AppGlobal.screenWidth,
-              height: AppGlobal.screenWidth * 0.4,
-              padding: const EdgeInsets.only(left: 10, right: 20),
-              decoration: const BoxDecoration(
-                color: AppColor.kColorPeriLighter,
-              ),
-              child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: Instructions.instructions.length,
-                  itemBuilder: (context, index) => Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            buildInstruction(Instructions.instructions[index])
-                          ]))),
-          SizedBox(height: AppGlobal.screenHeight * 0.05),
-          // FittedBox(
-          // child:
-          Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: const [
-                Text('Got it? ',
-                    style: TextStyle(
-                      color: AppColor.kColorPeriDarkest,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    )),
-                Text('Give a thumb up to get started.',
-                    style: TextStyle(
-                      color: AppColor.kColorPeriDarker,
-                      fontSize: 11,
-                    ))
-              ]),
         ],
       )),
     );
