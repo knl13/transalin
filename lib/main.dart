@@ -2,11 +2,10 @@ import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/constants/app_global.dart';
-import 'package:transalin/constants/app_language.dart';
 import 'package:transalin/providers/camera_controller_listener.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
@@ -14,7 +13,7 @@ import 'package:transalin/screens/input_screen.dart';
 import 'package:transalin/screens/instruction_screen.dart';
 
 late List<CameraDescription> cameras;
-late TranslateLanguageModelManager modelManager;
+late OnDeviceTranslatorModelManager modelManager;
 bool isChineseEnglishDownloaded = false;
 bool isFilipinoDownloaded = false;
 bool modelsAreDownloaded = false;
@@ -29,11 +28,10 @@ Future<void> main() async {
 }
 
 checkModels() async {
-  modelManager = GoogleMlKit.nlp.translateLanguageModelManager();
+  modelManager = OnDeviceTranslatorModelManager();
 
-  isChineseEnglishDownloaded =
-      await modelManager.isModelDownloaded(AppLanguage.zh);
-  isFilipinoDownloaded = await modelManager.isModelDownloaded(AppLanguage.tl);
+  isChineseEnglishDownloaded = await modelManager.isModelDownloaded('zh');
+  isFilipinoDownloaded = await modelManager.isModelDownloaded('tl');
 
   isChineseEnglishDownloaded && isFilipinoDownloaded
       ? modelsAreDownloaded = true
@@ -87,13 +85,14 @@ class DownloadScreenState extends State<DownloadScreen> {
 
   void downloadModels() async {
     if (!isChineseEnglishDownloaded) {
-      await modelManager.downloadModel(AppLanguage.zh);
+      await modelManager.downloadModel('zh');
       if (mounted) setState(() => isChineseEnglishDownloaded = true);
     }
     if (!isFilipinoDownloaded) {
-      await modelManager.downloadModel(AppLanguage.tl);
+      await modelManager.downloadModel('tl');
       if (mounted) setState(() => isFilipinoDownloaded = true);
     }
+    goToInstructionScreen();
   }
 
   void goToInstructionScreen() {
@@ -107,9 +106,6 @@ class DownloadScreenState extends State<DownloadScreen> {
   Widget build(BuildContext context) {
     AppGlobal.screenWidth = MediaQuery.of(context).size.width;
     AppGlobal.screenHeight = MediaQuery.of(context).size.height;
-    if (isChineseEnglishDownloaded && isFilipinoDownloaded) {
-      goToInstructionScreen();
-    }
 
     return Scaffold(
       backgroundColor: AppColor.kColorPeriLightest,
@@ -122,7 +118,7 @@ class DownloadScreenState extends State<DownloadScreen> {
               child: Text(
                   'Welcome! Let\'s first download\nthe translation language models.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColor.kColorPeri))),
+                  style: TextStyle(color: AppColor.kColorPeriDark))),
           SizedBox(height: AppGlobal.screenHeight * 0.1),
           SpinKitFadingGrid(
             size: AppGlobal.screenWidth * 0.5,

@@ -5,16 +5,15 @@ import 'dart:ui' as ui;
 import 'dart:math';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/rendering.dart' hide BoxDecoration, BoxShadow;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inset_box_shadow/flutter_inset_box_shadow.dart';
-import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
+import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gallery_saver/gallery_saver.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
-import 'package:image/image.dart' as imagelib;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_size_getter/file_input.dart' as isgfi;
 import 'package:image_size_getter/image_size_getter.dart' as isg;
@@ -34,7 +33,6 @@ List<String> romanizedTextList = [];
 List<String> textDisplayList = [];
 late ui.Image translatedImage;
 late ui.Image romanizedImage;
-late imagelib.Image? imageLibImage;
 
 late ui.Size sizeCopy;
 List<List<Color>> frameColors = [];
@@ -52,13 +50,12 @@ class OutputScreen extends StatefulWidget {
 }
 
 class OutputScreenState<T extends num> extends State<OutputScreen> {
-  late String langSourceTag;
-  late String langTargetTag;
+  late TranslateLanguage langSourceTag;
+  late TranslateLanguage langTargetTag;
   late String speechSourceTag;
   late String speechTargetTag;
   late bool hasRecognized;
-  late bool hasTranslated;
-  late RecognisedText inputText;
+  late RecognizedText inputText;
   late String recognizedText;
   late String translatedText;
   late String romanizedText;
@@ -96,16 +93,11 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   @override
   void initState() {
     super.initState();
+    AppGlobal.inOutputScreen = true;
     image = Image.file(File(widget.inputImage.path));
     inputImage = InputImage.fromFilePath(widget.inputImage.path);
     convertToUIImage(File(widget.inputImage.path))
         .then((image) => uiImage = image);
-
-    Uint8List imageBytes = File(widget.inputImage.path).readAsBytesSync();
-
-    List<int> values = imageBytes.buffer.asUint8List();
-
-    imageLibImage = imagelib.decodeImage(values);
 
     appBar = AppBar(
       title: const Text('TranSalin',
@@ -163,6 +155,8 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
 
   @override
   void dispose() {
+    AppGlobal.inOutputScreen = false;
+
     // Dispose of the controller when the widget is disposed.
     Fluttertoast.cancel();
     flutterTts.stop();
@@ -171,7 +165,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
 
   getResults() async {
     hasRecognized = false;
-    hasTranslated = false;
+    AppGlobal.hasTranslated = false;
     langSourceTag = getLangTag(0);
     langTargetTag = getLangTag(1);
     speechSourceTag = getSpeechTag(langSourceTag);
@@ -188,11 +182,11 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     withRomanization = langTargetTag == AppLanguage.zh;
     frameColors.clear();
 
-    final textRecognizer = GoogleMlKit.vision.textDetectorV2();
-    // inputText = await textRecognizer.processImage(inputImage,
-    //     script: TextRecognitionOptions.KOREAN);
-    inputText = await textRecognizer.processImage(inputImage,
-        script: TextRecognitionOptions.CHINESE);
+    final textRecognizer =
+        TextRecognizer(script: TextRecognitionScript.chinese);
+
+    inputText = await textRecognizer.processImage(inputImage);
+
     if (!mounted) return;
     await textRecognizer.close();
     if (!mounted) return;
@@ -205,28 +199,10 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     //translate recognized text by block to assure a sound translation
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
-        // List<Offset> points = line.cornerPoints;
-        // List<Color> colors = extractPixelsColors(
-        //     imageBytes, topLeft, topRight, bottomLeft, bottomRight);
-
-        // frameColor =
-        //     generator.darkVibrantColor ?? PaletteColor(Colors.black, 2);
-
-        // List<Color> colors = extractPixelsColors(
-        //     imageBytes,
-        //     imagelib.Point(points[3].dx, points[3].dy),
-        //     imagelib.Point(points[2].dx, points[2].dy),
-        //     imagelib.Point(points[0].dx, points[0].dy),
-        //     imagelib.Point(points[1].dx, points[1].dy));
-        // colors = sortColors(colors);
-        // halfLength = (colors.length ~/ 2);
-        // Color color1 = getAverageColor(colors, 0, halfLength);
-        // Color color2 = getAverageColor(colors, halfLength, colors.length);
-        // frameColors.add([color1, color2]);
         lineText = line.text;
-        final OnDeviceTranslator translator = GoogleMlKit.nlp
-            .onDeviceTranslator(
-                sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
+
+        final OnDeviceTranslator translator = OnDeviceTranslator(
+            sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
 
         outputText = await translator.translateText(lineText);
         if (!mounted) return;
@@ -256,7 +232,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
       }
     }
 
-    if (mounted) setState(() => hasTranslated = true);
+    if (mounted) setState(() => AppGlobal.hasTranslated = true);
   }
 
   Future<ui.Image> convertToUIImage(File file) async {
@@ -288,7 +264,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             openCloseDial: isDialOpen,
 
             onPress: () => {
-              if (!hasTranslated)
+              if (!AppGlobal.hasTranslated)
                 {
                   isDialOpen.value = false,
                 }
@@ -297,8 +273,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                   recognizedText == ''
                       ? {
                           isDialOpen.value = false,
-                          showToast(
-                              'No text detected. The image\nmay be too dark or blurry.'),
+                          showToast('No text detected.'),
                         }
                       : isDialOpen.value = true
                 }
@@ -427,7 +402,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                 child: Container(
                     color: AppColor.kColorPeriLighter,
                     child: Stack(children: [
-                      !hasTranslated
+                      !AppGlobal.hasTranslated
                           ? Stack(children: [
                               imageDisplay(),
                               const Center(
@@ -438,8 +413,8 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                             ])
                           : InteractiveViewer(
                               // clipBehavior: ui.Clip.hardEdge,
-                              boundaryMargin:
-                                  const EdgeInsets.all(double.infinity),
+                              // boundaryMargin:
+                              //     const EdgeInsets.all(double.infinity),
                               maxScale: 4,
                               minScale: 0.5,
                               child: !showOverlay
@@ -525,7 +500,12 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: Colors.white70),
           child: const SizedBox(
-              width: 20, height: 20, child: CircularProgressIndicator())));
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppColor.kColorPeriLight),
+              ))));
 
   Widget volumeSign() => Align(
       alignment: Alignment.topRight,
@@ -553,23 +533,22 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     return;
   }
 
-  getSpeechTag(String langTag) {
+  getSpeechTag(TranslateLanguage langTag) {
     return langTag == AppLanguage.en
         ? 'en-US'
         : langTag == AppLanguage.tl
-            ? 'fil-PH'
+            ? 'tl-PH'
             : 'zh-CN';
   }
 }
 
 class BoxPainter extends CustomPainter {
   BoxPainter(this.fileImage, this.inputText);
-  final RecognisedText inputText;
+  final RecognizedText inputText;
   final File fileImage;
   late Uint8List bytes;
   // final ui.PictureRecorder recorder = ui.PictureRecorder();
   int counter = 0;
-  late ByteData uiBytes;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -584,7 +563,7 @@ class BoxPainter extends CustomPainter {
     // debugPrint("weh ${uiImage.width} ${uiImage.height}");
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
-        List<Offset> points = line.cornerPoints;
+        List<Point<int>> points = line.cornerPoints;
         // final PaletteGenerator generator =
         //     await PaletteGenerator.fromImageProvider(
         //   FileImage(fileImage),
@@ -599,10 +578,10 @@ class BoxPainter extends CustomPainter {
         // Color frameColor = getAverageColor(colors);
         // debugPrint("weh $frameColor");
         final Path rectangle = Path();
-        rectangle.moveTo(points[0].dx, points[0].dy);
-        rectangle.lineTo(points[1].dx, points[1].dy);
-        rectangle.lineTo(points[2].dx, points[2].dy);
-        rectangle.lineTo(points[3].dx, points[3].dy);
+        rectangle.moveTo(points[0].x.toDouble(), points[0].y.toDouble());
+        rectangle.lineTo(points[1].x.toDouble(), points[1].y.toDouble());
+        rectangle.lineTo(points[2].x.toDouble(), points[2].y.toDouble());
+        rectangle.lineTo(points[3].x.toDouble(), points[3].y.toDouble());
 
         // paint.color = Color(abgrToArgb(imageLibImage!
         // .getPixel(points[2].dx.toInt(), points[2].dy.toInt())));
@@ -622,16 +601,16 @@ class BoxPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-double findAngle(Offset p1, Offset p2) {
-  final double deltaY = (p2.dy - p1.dy);
-  final double deltaX = (p2.dx - p1.dx);
+double findAngle(Point<int> p1, Point<int> p2) {
+  final double deltaY = (p2.y.toDouble() - p1.y.toDouble());
+  final double deltaX = (p2.x.toDouble() - p1.x.toDouble());
   final double result = atan2(deltaY, deltaX);
   return (result < 0) ? (6.283 + result) : result;
 }
 
 class TranslationPainter extends CustomPainter {
   TranslationPainter(this.inputText);
-  final RecognisedText inputText;
+  final RecognizedText inputText;
 
   int counter = 0;
   @override
@@ -640,10 +619,10 @@ class TranslationPainter extends CustomPainter {
     //     sourceLanguage: langSourceTag, targetLanguage: langTargetTag);
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
-        List<Offset> points = line.cornerPoints;
+        List<Point<int>> points = line.cornerPoints;
 
-        double frameWidth = points[1].dx - points[0].dx;
-        double frameHeight = points[3].dy - points[0].dy;
+        double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
+        double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
         double minimumFontScale = 0;
 
         final TextPainter textPainter = TextPainter(
@@ -704,12 +683,13 @@ class TranslationPainter extends CustomPainter {
         textPainter.textScaleFactor = textScaleFactor;
         textPainter.layout(maxWidth: frameWidth);
         canvas.save();
-        canvas.translate(points[0].dx, points[0].dy);
+        canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
         debugPrint('weh weh 1');
         canvas.rotate(findAngle(points[0], points[1]));
         debugPrint('weh weh 2');
-        canvas.translate(-points[0].dx, -points[0].dy);
-        textPainter.paint(canvas, Offset(points[0].dx, points[0].dy));
+        canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
+        textPainter.paint(
+            canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
         canvas.restore();
       }
     }
@@ -777,17 +757,17 @@ class TranslationPainter extends CustomPainter {
 
 class RomanizationPainter extends CustomPainter {
   RomanizationPainter(this.inputText);
-  final RecognisedText inputText;
+  final RecognizedText inputText;
 
   int counter = 0;
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
-        List<Offset> points = line.cornerPoints;
+        List<Point<int>> points = line.cornerPoints;
 
-        double frameWidth = points[1].dx - points[0].dx;
-        double frameHeight = points[3].dy - points[0].dy;
+        double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
+        double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
         double minimumFontScale = 0;
 
         final TextPainter textPainter = TextPainter(
@@ -848,10 +828,11 @@ class RomanizationPainter extends CustomPainter {
         textPainter.textScaleFactor = textScaleFactor;
         textPainter.layout(maxWidth: frameWidth);
         canvas.save();
-        canvas.translate(points[0].dx, points[0].dy);
+        canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
         canvas.rotate(findAngle(points[0], points[1]));
-        canvas.translate(-points[0].dx, -points[0].dy);
-        textPainter.paint(canvas, Offset(points[0].dx, points[0].dy));
+        canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
+        textPainter.paint(
+            canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
         canvas.restore();
       }
     }

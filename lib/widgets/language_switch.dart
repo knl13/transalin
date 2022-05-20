@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/constants/app_color.dart';
+import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 
@@ -14,16 +16,31 @@ class LanguageSwitch extends StatelessWidget {
 
     return IconButton(
         onPressed: () {
-          if (sourceLanguage == 'Detect') {
-            context.read<SourceLanguageChanger>().change(targetLanguage);
-            context.read<TargetLanguageChanger>().change('Select');
-          } else if (targetLanguage == 'Select') {
-            context.read<TargetLanguageChanger>().change(sourceLanguage);
-            context.read<SourceLanguageChanger>().change('Detect');
+          if (AppGlobal.inOutputScreen && !AppGlobal.hasTranslated) {
+            () async {
+              await Fluttertoast.cancel();
+
+              Fluttertoast.showToast(
+                  msg:
+                      'Already processing. Try\nchanging the language again later.',
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.TOP,
+                  fontSize: 10,
+                  backgroundColor: AppColor.kColorPeriDarkestOp,
+                  textColor: Colors.white);
+            }();
           } else {
-            String tempLanguage = sourceLanguage;
-            context.read<SourceLanguageChanger>().change(targetLanguage);
-            context.read<TargetLanguageChanger>().change(tempLanguage);
+            if (sourceLanguage == 'Detect') {
+              context.read<SourceLanguageChanger>().change(targetLanguage);
+              context.read<TargetLanguageChanger>().change('Select');
+            } else if (targetLanguage == 'Select') {
+              context.read<TargetLanguageChanger>().change(sourceLanguage);
+              context.read<SourceLanguageChanger>().change('Detect');
+            } else {
+              String tempLanguage = sourceLanguage;
+              context.read<SourceLanguageChanger>().change(targetLanguage);
+              context.read<TargetLanguageChanger>().change(tempLanguage);
+            }
           }
         },
         icon: const Icon(

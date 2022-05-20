@@ -78,7 +78,7 @@ class InstructionScreen extends StatelessWidget {
                           builder: (context) => const InputScreen())),
               child: SizedBox(
                   width: AppGlobal.screenWidth * 0.5,
-                  child: Lottie.asset('assets/thumb_up.json'))),
+                  child: Lottie.asset('assets/lottie/thumb_up.json'))),
           SizedBox(height: AppGlobal.screenHeight * 0.025),
           Container(
               alignment: Alignment.centerLeft,

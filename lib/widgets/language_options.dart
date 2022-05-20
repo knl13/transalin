@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/classes/language.dart';
 import 'package:transalin/classes/languages.dart';
 import 'package:transalin/constants/app_color.dart';
+import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 
@@ -17,9 +19,23 @@ class LanguageOptions extends StatefulWidget {
 
 class _LanguageOptionsState extends State<LanguageOptions> {
   changeLanguage(int index, String selectedLanguage) {
-    return index == 0
-        ? context.read<SourceLanguageChanger>().change(selectedLanguage)
-        : context.read<TargetLanguageChanger>().change(selectedLanguage);
+    if (AppGlobal.inOutputScreen && !AppGlobal.hasTranslated) {
+      () async {
+        await Fluttertoast.cancel();
+
+        Fluttertoast.showToast(
+            msg: 'Already processing. Try\nchanging the language again later.',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.TOP,
+            fontSize: 10,
+            backgroundColor: AppColor.kColorPeriDarkestOp,
+            textColor: Colors.white);
+      }();
+    } else {
+      return index == 0
+          ? context.read<SourceLanguageChanger>().change(selectedLanguage)
+          : context.read<TargetLanguageChanger>().change(selectedLanguage);
+    }
   }
 
   watchLanguage(int index) {

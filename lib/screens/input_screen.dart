@@ -58,6 +58,7 @@ class InputScreenState extends State<InputScreen> {
   Widget build(BuildContext context) {
     AppGlobal.screenWidth = MediaQuery.of(context).size.width;
     AppGlobal.screenHeight = MediaQuery.of(context).size.height;
+
     bool isControllerInitialized =
         context.watch<CameraControllerListener>().isInitialized;
 

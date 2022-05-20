@@ -30,12 +30,12 @@ class Instructions {
       icon: Icons.settings_rounded,
       heading: 'Feature',
       text:
-          'The features provided are toggle overlay visibility, change Hanzi to Latin script, copy and listen to text, pinch to zoom in or out, and save the image with or without the overlay.');
+          'The features provided are toggle overlay visibility, romanize Chinese script, copy and listen to text, pinch to zoom in or out, and save the image with or without the overlay.');
   static const interface = Instruction(
       icon: Icons.layers_outlined,
       heading: 'Interface',
       text:
-          'The features operate on what text is shown on the screen. The toggle and change features help switch the display to access the different texts.');
+          'The features operate on what text is shown on the screen. The toggle and romanize features help switch the display to access the recognized, translated, and romanized texts.');
 
   static const List<Instruction> instructions = [
     language,
