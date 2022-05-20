@@ -28,8 +28,8 @@ class _LanguageOptionsState extends State<LanguageOptions> {
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.TOP,
             fontSize: 10,
-            backgroundColor: AppColor.kColorPeriDarkestOp,
-            textColor: Colors.white);
+            backgroundColor: AppColor.kColorPeriDarkest30,
+            textColor: AppColor.kColorWhite);
       }();
     } else {
       return index == 0

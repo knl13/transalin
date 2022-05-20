@@ -63,13 +63,12 @@ class InputScreenState extends State<InputScreen> {
         context.watch<CameraControllerListener>().isInitialized;
 
     return Scaffold(
-        // backgroundColor: AppColor.kColorPeriDarkest,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: const Text('TranSalin',
               style: TextStyle(shadows: [AppGlobal.shadowStyle])),
           centerTitle: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColor.kColorTransparent,
           elevation: 0,
           actions: [
             IconButton(
@@ -77,7 +76,7 @@ class InputScreenState extends State<InputScreen> {
                 splashRadius: 14,
                 icon: const Icon(Icons.help_outline_rounded,
                     size: 20,
-                    color: Colors.white,
+                    color: AppColor.kColorWhite,
                     shadows: [AppGlobal.shadowStyle]),
                 onPressed: () async => await Navigator.of(context).push(
                     MaterialPageRoute(

@@ -49,7 +49,7 @@ class OutputScreen extends StatefulWidget {
   OutputScreenState createState() => OutputScreenState();
 }
 
-class OutputScreenState<T extends num> extends State<OutputScreen> {
+class OutputScreenState extends State<OutputScreen> {
   late TranslateLanguage langSourceTag;
   late TranslateLanguage langTargetTag;
   late String speechSourceTag;
@@ -76,6 +76,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
   final FlutterTts flutterTts = FlutterTts();
   late bool withRomanization;
   late AppBar appBar;
+  final textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
   void getImageDimensions() {
     final size = isg.ImageSizeGetter.getSize(
         isgfi.FileInput(File(widget.inputImage.path)));
@@ -103,7 +104,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
       title: const Text('TranSalin',
           style: TextStyle(shadows: [AppGlobal.shadowStyle])),
       centerTitle: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColor.kColorTransparent,
       elevation: 0,
       actions: [
         IconButton(
@@ -111,7 +112,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             splashRadius: 14,
             icon: const Icon(Icons.help_outline_rounded,
                 size: 20,
-                color: Colors.white,
+                color: AppColor.kColorWhite,
                 shadows: [AppGlobal.shadowStyle]),
             onPressed: () async => await Navigator.of(context).push(
                 MaterialPageRoute(
@@ -121,7 +122,9 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
         splashColor: AppColor.kColorPeriLight,
         splashRadius: 14,
         icon: const Icon(Icons.close_rounded,
-            size: 25, color: Colors.white, shadows: [AppGlobal.shadowStyle]),
+            size: 25,
+            color: AppColor.kColorWhite,
+            shadows: [AppGlobal.shadowStyle]),
         onPressed: () => Navigator.of(context).pop(),
       ),
     );
@@ -142,15 +145,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     });
 
     getResults();
-    // .then((_) {
-    //   if (mounted) {
-    //     showModalBottomSheet(
-    //         barrierColor: Colors.black.withOpacity(0.2),
-    //         backgroundColor: Colors.transparent,
-    //         context: context,
-    //         builder: (builder) => featureMenu(context));
-    //   }
-    // });
   }
 
   @override
@@ -182,9 +176,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     withRomanization = langTargetTag == AppLanguage.zh;
     frameColors.clear();
 
-    final textRecognizer =
-        TextRecognizer(script: TextRecognitionScript.chinese);
-
     inputText = await textRecognizer.processImage(inputImage);
 
     if (!mounted) return;
@@ -196,17 +187,15 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
     String outputText;
     String convertedText;
 
+    final OnDeviceTranslator translator = OnDeviceTranslator(
+        sourceLanguage: langSourceTag, targetLanguage: langTargetTag);
+
     //translate recognized text by block to assure a sound translation
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         lineText = line.text;
 
-        final OnDeviceTranslator translator = OnDeviceTranslator(
-            sourceLanguage: getLangTag(0), targetLanguage: getLangTag(1));
-
         outputText = await translator.translateText(lineText);
-        if (!mounted) return;
-        translator.close();
 
         if (mounted) {
           setState(() {
@@ -232,6 +221,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
       }
     }
 
+    await translator.close();
     if (mounted) setState(() => AppGlobal.hasTranslated = true);
   }
 
@@ -283,7 +273,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
             // elevation: AppGlobal.screenHeight * 0.08,
             animatedIcon: AnimatedIcons.menu_close,
             overlayColor: AppColor.kColorPeriDarkest,
-            overlayOpacity: 0.2,
+            overlayOpacity: 0.3,
             children: [
               SpeedDialChild(
                   child: Icon(Features.toggle.icon,
@@ -413,8 +403,8 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                             ])
                           : InteractiveViewer(
                               // clipBehavior: ui.Clip.hardEdge,
-                              // boundaryMargin:
-                              //     const EdgeInsets.all(double.infinity),
+                              boundaryMargin:
+                                  const EdgeInsets.all(double.infinity),
                               maxScale: 4,
                               minScale: 0.5,
                               child: !showOverlay
@@ -431,17 +421,6 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
                               : loadingSign(),
                     ])))),
 
-        // Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-        //   GestureDetector(
-        //       onVerticalDragStart: (DragStartDetails details) {
-        //         if (mounted) {
-        //           showModalBottomSheet(
-        //               barrierColor: Colors.black.withOpacity(0.2),
-        //               backgroundColor: Colors.transparent,
-        //               context: context,
-        //               builder: (context) => featureMenu(context));
-        //         }
-        //       },
         Container(alignment: Alignment.bottomCenter, child: const LanguageBar())
         // ),
         // ])
@@ -457,8 +436,8 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.TOP,
         fontSize: 10,
-        backgroundColor: AppColor.kColorPeriDarkestOp,
-        textColor: Colors.white);
+        backgroundColor: AppColor.kColorPeriDarkest30,
+        textColor: AppColor.kColorWhite);
   }
 
   FittedBox overlayDisplay() {
@@ -498,7 +477,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
               EdgeInsets.only(top: appBar.preferredSize.height + 20, right: 20),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
-              shape: BoxShape.circle, color: Colors.white70),
+              shape: BoxShape.circle, color: AppColor.kColorWhite70),
           child: const SizedBox(
               width: 20,
               height: 20,
@@ -517,7 +496,7 @@ class OutputScreenState<T extends num> extends State<OutputScreen> {
               EdgeInsets.only(top: appBar.preferredSize.height + 20, right: 20),
           padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
-              shape: BoxShape.circle, color: Colors.white70),
+              shape: BoxShape.circle, color: AppColor.kColorWhite70),
           child: const Icon(
             Icons.volume_up_rounded,
             size: 30,
@@ -556,27 +535,11 @@ class BoxPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.fill
       ..color = AppColor.kColorPeriDarkest;
-    // canvas = Canvas(recorder);
-    // canvasCopy = Canvas(recorder);
 
-    // canvas.drawImage(uiImage, Offset.zero, paint);
-    // debugPrint("weh ${uiImage.width} ${uiImage.height}");
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         List<Point<int>> points = line.cornerPoints;
-        // final PaletteGenerator generator =
-        //     await PaletteGenerator.fromImageProvider(
-        //   FileImage(fileImage),
-        //   maximumColorCount: 2,
-        // );
 
-        // frameColor =
-        //     generator.darkVibrantColor ?? PaletteColor(Colors.black, 2);
-        // List<Color> colors = extractPixelsColors(
-        //     bytes, points[3], points[2], points[0], points[1]);
-        // colors = sortColors(colors);
-        // Color frameColor = getAverageColor(colors);
-        // debugPrint("weh $frameColor");
         final Path rectangle = Path();
         rectangle.moveTo(points[0].x.toDouble(), points[0].y.toDouble());
         rectangle.lineTo(points[1].x.toDouble(), points[1].y.toDouble());
@@ -631,7 +594,7 @@ class TranslationPainter extends CustomPainter {
               style: TextStyle(
                 fontSize: frameHeight + 5,
                 // color: frameColors[counter][1],
-                color: Colors.white,
+                color: AppColor.kColorWhite,
               ),
             ),
             textDirection: TextDirection.ltr,
@@ -684,9 +647,7 @@ class TranslationPainter extends CustomPainter {
         textPainter.layout(maxWidth: frameWidth);
         canvas.save();
         canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
-        debugPrint('weh weh 1');
         canvas.rotate(findAngle(points[0], points[1]));
-        debugPrint('weh weh 2');
         canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
         textPainter.paint(
             canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
@@ -695,61 +656,6 @@ class TranslationPainter extends CustomPainter {
     }
     counter = 0;
   }
-
-  // final TextPainter textPainter = TextPainter(
-  //   text: TextSpan(
-  //     text: line.text,
-  //     // style: TextStyle(fontSize: (points[3].dy - points[0].dy)),
-  //   ),
-  //   // textAlign: TextAlign.center,
-  //   textDirection: TextDirection.ltr,
-  //   maxLines: 1,
-  // )..layout(
-  //     minWidth: points[1].dx - points[0].dx,
-  //     maxWidth: points[1].dx + points[0].dx,
-  //   );
-  // debugPrint(
-  //     "weh${points[1].dx} - ${points[0].dx} = ${(points[1].dx - points[0].dx)}");
-  // final textSpan = TextSpan(
-  //   text: ' $title ',
-  //   style: TextStyle(
-  //     color: titleColor,
-  //     fontSize: fontSize,
-  //     height: 1.0,
-  //     backgroundColor: backgroundColor,
-  //   ),
-  // );
-  // final TextPainter textPainter = TextPainter(
-  //     text: textSpan)
-  //   ..layout(minWidth: 0, maxWidth: double.infinity);
-  // debugPrint(textPainter.size); //the TextSpan width
-
-// Size measure(String text, TextStyle style,
-//       {int maxLines: 1, TextDirection direction = TextDirection.ltr, double maxWidth = double.infinity}) {
-//     final TextPainter textPainter =
-//         TextPainter(text: TextSpan(text: text, style: style), maxLines: maxLines, textDirection: direction)
-//           ..layout(minWidth: 0, maxWidth: maxWidth);
-//     return textPainter.size;
-//   }
-  // canvas.save();
-  // final pivot = textPainter.size.center(const Offset(50, 50));
-  // canvas.translate(pivot.dx, pivot.dy);
-  // canvas.rotate(-0.1);
-  // canvas.translate(-pivot.dx, -pivot.dy);
-  // textPainter.paint(canvas, Offset(points[0].dx, points[0].dy));
-  // canvas.restore();
-  // }
-  // }
-  // translator.close();
-
-  // double textSize(ui.Size size, List<Offset> points) {
-  //   if (size.width > size.height) {
-  //     return (points[1].dx - points[0].dx) / 100;
-  //   }
-  //   else {
-  //     return
-  //   }
-  // }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
@@ -773,9 +679,10 @@ class RomanizationPainter extends CustomPainter {
         final TextPainter textPainter = TextPainter(
             text: TextSpan(
               text: romanizedTextList[counter],
-              style: TextStyle(fontSize: frameHeight, color: Colors.white
-                  // color: frameColors[counter][1],
-                  ),
+              style:
+                  TextStyle(fontSize: frameHeight, color: AppColor.kColorWhite
+                      // color: frameColors[counter][1],
+                      ),
             ),
             textDirection: TextDirection.ltr,
             textScaleFactor: 1)
