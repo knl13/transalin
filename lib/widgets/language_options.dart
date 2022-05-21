@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:transalin/classes/language.dart';
 import 'package:transalin/classes/languages.dart';
@@ -11,26 +10,18 @@ import 'package:transalin/providers/target_language_changer.dart';
 class LanguageOptions extends StatefulWidget {
   const LanguageOptions({Key? key, required this.index}) : super(key: key);
 
-  final int index;
+  final int index; //0: source language; 1: target language
 
   @override
   State<LanguageOptions> createState() => _LanguageOptionsState();
 }
 
 class _LanguageOptionsState extends State<LanguageOptions> {
+  //update to chosen language from the popup menu
   changeLanguage(int index, String selectedLanguage) {
+    //deny language change when the recognizer and translator are still processing
     if (AppGlobal.inOutputScreen && !AppGlobal.hasTranslated) {
-      () async {
-        await Fluttertoast.cancel();
-
-        Fluttertoast.showToast(
-            msg: 'Already processing. Try\nchanging the language again later.',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.TOP,
-            fontSize: 10,
-            backgroundColor: AppColor.kColorPeriDarkest70,
-            textColor: AppColor.kColorWhite);
-      }();
+      AppGlobal.denyLanguageChange();
     } else {
       return index == 0
           ? context.read<SourceLanguageChanger>().change(selectedLanguage)
@@ -38,6 +29,7 @@ class _LanguageOptionsState extends State<LanguageOptions> {
     }
   }
 
+  //listeners for language display in the language bar
   watchLanguage(int index) {
     return index == 0
         ? context.watch<SourceLanguageChanger>().language

@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:transalin/constants/app_color.dart';
 
 abstract class AppGlobal {
@@ -8,15 +9,22 @@ abstract class AppGlobal {
 
   static late CameraDescription camera;
 
-  //listeners for languages
-  static late String sourceLanguageReader;
-  static late String targetLanguageReader;
-  static late String sourceLanguageWatcher;
-  static late String targetLanguageWatcher;
-
   //checkers to allow/deny language change
   static bool inOutputScreen = false;
   static bool hasTranslated = false;
+
+  //toast for denying language change
+  static denyLanguageChange() => () async {
+        await Fluttertoast.cancel();
+
+        Fluttertoast.showToast(
+            msg: 'Already processing. Try\nchanging the language again later.',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.TOP,
+            fontSize: 10,
+            backgroundColor: AppColor.kColorPeriDarkest70,
+            textColor: AppColor.kColorWhite);
+      }();
 
   static const TextStyle textStylePeriLight =
       TextStyle(color: AppColor.kColorPeriLight);
