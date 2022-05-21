@@ -1,5 +1,4 @@
 import 'dart:async';
-// import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,7 @@ import 'package:transalin/widgets/language_bar.dart';
 
 late CameraController _controller;
 
-//a screen that takes input from users through gallery or cameras
+//a screen that takes input from users through gallery or camera
 class InputScreen extends StatefulWidget {
   const InputScreen({Key? key}) : super(key: key);
 
@@ -30,17 +29,17 @@ class InputScreenState extends State<InputScreen> {
   @override
   void initState() {
     super.initState();
-    // To display the current output from the Camera, create a CameraController.
+    //create a camera controller to display the current camera preview
     _controller = CameraController(
-        // Get a specific cameras from the list of available cameras.
-        AppGlobal.camera,
-        ResolutionPreset.max, // Define the resolution to use.
-        enableAudio: false);
+        AppGlobal.camera, //use the saved camera from the time the app started
+        ResolutionPreset.max, //use the highest resolution available
+        enableAudio: false); //audio is not needed
 
     _initializeControllerFuture = _controller.initialize();
   }
 
   displayCameraView() {
+    //initialize the controller again if the user did not allow camera access at first
     _initializeControllerFuture = _controller.initialize();
     if (mounted) {
       setState(() {});
@@ -49,21 +48,23 @@ class InputScreenState extends State<InputScreen> {
 
   @override
   void dispose() {
-    // Dispose of the controller when the widget is disposed.
-    _controller.dispose();
+    _controller.dispose(); //dispose controller when the widget is disposed
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    //save screen width and height to catch if the app does not start at download screen
     AppGlobal.screenWidth = MediaQuery.of(context).size.width;
     AppGlobal.screenHeight = MediaQuery.of(context).size.height;
 
-    bool isControllerInitialized =
-        context.watch<CameraControllerListener>().isInitialized;
+    bool isControllerInitialized = context
+        .watch<CameraControllerListener>()
+        .isInitialized; //watch if the camera has been granted access to show the shutter and flash buttons
 
     return Scaffold(
         extendBodyBehindAppBar: true,
+        //title and help button
         appBar: AppBar(
           title: const Text('TranSalin',
               style: TextStyle(shadows: [AppGlobal.shadowStyle])),
@@ -71,6 +72,7 @@ class InputScreenState extends State<InputScreen> {
           backgroundColor: AppColor.kColorTransparent,
           elevation: 0,
           actions: [
+            //go to instruction screen if help button is clicked
             IconButton(
                 splashColor: AppColor.kColorPeriLight,
                 splashRadius: 14,
@@ -80,20 +82,17 @@ class InputScreenState extends State<InputScreen> {
                     shadows: [AppGlobal.shadowStyle]),
                 onPressed: () async => await Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (context) =>
-                            const InstructionScreen(pop: true))))
+                        builder: (context) => const InstructionScreen(
+                            pop:
+                                true)))) //pop is true to go back to input screen
           ],
         ),
-        // You must wait until the controller is initialized before displaying the
-        // cameras preview. Use a FutureBuilder to display a loading spinner until the
-        // controller has finished initializing.
         body: Stack(children: [
+          //container for allow camera access text button or camera preview
           SizedBox(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height * 0.92,
-              // margin: const EdgeInsets.only(top: 24),
               child: ClipRRect(
-                  // borderRadius: const BorderRadius.all(Radius.circular(20)),
                   borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20)),
@@ -102,22 +101,22 @@ class InputScreenState extends State<InputScreen> {
                       child: FutureBuilder<void>(
                         future: _initializeControllerFuture,
                         builder: (context, snapshot) {
+                          //the camera preview will only show if the controller has been successfully initialized
                           if (snapshot.connectionState ==
                                   ConnectionState.done &&
                               _controller.value.isInitialized) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              context
-                                  .read<CameraControllerListener>()
-                                  .change(true);
+                              context.read<CameraControllerListener>().change(
+                                  true); //update listener to display shutter and flash buttons
+                              //update flash icon when the user turns it on or off
                               !isFlashOn
                                   ? _controller.setFlashMode(FlashMode.off)
                                   : _controller.setFlashMode(FlashMode.always);
                             });
 
-                            // If the Future is complete, display the preview.
                             return CameraPreview(_controller);
                           } else {
-                            // Otherwise, display a loading indicator.
+                            //display the allow camera access text button if the camera has not been initialized
                             return Center(
                                 child: TextButton(
                                     child: const Text('Allow access to camera',
@@ -141,22 +140,29 @@ class InputScreenState extends State<InputScreen> {
                               color: isControllerInitialized
                                   ? AppColor.kColorWhite
                                   : AppColor.kColorPeri,
-                              // icon: const Icon(Icons.add_to_photos),
+                              //select image from gallery button
                               icon: const Icon(Icons.collections_rounded),
                               onPressed: () async {
                                 try {
-                                  final XFile? inputImage = await ImagePicker()
+                                  final XFile? imageFile = await ImagePicker()
                                       .pickImage(source: ImageSource.gallery);
-                                  if (inputImage != null) {
-                                    if (!mounted) return;
+                                  if (imageFile != null) {
+                                    if (!mounted) {
+                                      return;
+                                    } //catcher for when the user did not select any photo
+
+                                    //give the image file to the output screen
+                                    //the index determines the alignment of input image
+                                    //0: coming from the camera, top align
+                                    //1: coming from the gallery, center align
                                     await Navigator.of(context).push(
                                         MaterialPageRoute(
                                             builder: (context) => OutputScreen(
                                                 index: 0,
-                                                inputImage: inputImage)));
+                                                imageFile: imageFile)));
                                   }
                                 } on PlatformException {
-                                  // If an error occurs, log the error to the console.
+                                  // debugPrint(e);
                                 }
                               }))),
                   Expanded(
@@ -174,41 +180,39 @@ class InputScreenState extends State<InputScreen> {
                                 color: AppColor.kColorWhite,
                               ),
                               onPressed: () async {
-                                // Take the Picture in a try / catch block. If anything goes wrong,
-                                // catch the error.
                                 try {
-                                  // Ensure that the cameras is initialized.
                                   await _initializeControllerFuture;
 
-                                  // Attempt to take a picture and get the file `image`
-                                  // where it was saved.
-                                  final XFile inputImage =
+                                  final XFile imageFile =
                                       await _controller.takePicture();
 
-                                  // If the picture was taken, display it on a new screen.
-                                  // ignore: use_build_context_synchronously
-                                  await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => OutputScreen(
-                                        // Pass the automatically generated path to
-                                        // the OutputScreen widget.
-                                        index: 1,
-                                        inputImage: inputImage,
+                                  //give the image file to the output screen
+                                  //the index determines the alignment of input image
+                                  //0: coming from the camera, top align
+                                  //1: coming from the gallery, center align
+                                  () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => OutputScreen(
+                                          index: 1,
+                                          imageFile: imageFile,
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  }();
                                 } catch (e) {
-                                  // If an error occurs, log the error to the console.
                                   // debugPrint(e);
                                 }
                               })
                           : const SizedBox(width: 30)),
                   Expanded(
+                      //flash button
                       child: isControllerInitialized
                           ? IconButton(
                               icon: !isFlashOn
                                   ? const Icon(Icons.flash_on_rounded)
-                                  : const Icon(Icons.flash_off_rounded),
+                                  : const Icon(Icons
+                                      .flash_off_rounded), //change display depending on flash status
                               iconSize: 30,
                               color: AppColor.kColorWhite,
                               onPressed: () {

@@ -2,18 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:transalin/classes/instruction.dart';
 
 class Instructions {
-  static const language = Instruction(
-      icon: Icons.language_rounded,
-      heading: 'Language',
-      text:
-          'The current available languages are Chinese, English, and Filipino. These three are all functional as a source or target language.');
-
-  static const input = Instruction(
-      icon: Icons.photo_rounded,
-      heading: 'Input',
-      text:
-          'The inputs that can be processed are either images chosen from the device or captured through the camera.');
-
   static const translation = Instruction(
       icon: Icons.wifi_off_rounded,
       heading: 'Translation',
@@ -38,8 +26,6 @@ class Instructions {
           'The features operate on what text is shown on the screen. The toggle and romanize features help switch the display to access the recognized, translated, and romanized texts.');
 
   static const List<Instruction> instructions = [
-    // language,
-    // input,
     translation,
     romanization,
     feature,

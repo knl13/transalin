@@ -26,7 +26,7 @@ class LanguageSwitch extends StatelessWidget {
                   toastLength: Toast.LENGTH_SHORT,
                   gravity: ToastGravity.TOP,
                   fontSize: 10,
-                  backgroundColor: AppColor.kColorPeriDarkest30,
+                  backgroundColor: AppColor.kColorPeriDarkest70,
                   textColor: AppColor.kColorWhite);
             }();
           } else {
