@@ -27,7 +27,6 @@ import 'package:transalin/widgets/language_bar.dart';
 //lists where the texts are saved
 List<String> translatedTextList = [];
 List<String> romanizedTextList = [];
-late RecognizedText inputText;
 
 //a screen that displays the result of translation
 class OutputScreen extends StatefulWidget {
@@ -56,6 +55,7 @@ class OutputScreenState extends State<OutputScreen> {
   late TranslateLanguage langSourceTag;
   late TranslateLanguage langTargetTag;
 
+  late RecognizedText inputText;
   late String recognizedText;
   late String translatedText;
   late String romanizedText;
@@ -247,11 +247,9 @@ class OutputScreenState extends State<OutputScreen> {
     }
 
     //make the overlay display
-    boundingBoxPainter = BoxPainter();
-    translationPainter = TextListPainter(translatedTextList);
-    if (withRomanization) {
-      romanizationPainter = TextListPainter(romanizedTextList);
-    }
+    boundingBoxPainter = BoxPainter(inputText);
+    translationPainter = TextListPainter(inputText);
+    if (withRomanization) romanizationPainter = RomanizationPainter(inputText);
 
     if (mounted) setState(() => AppGlobal.hasTranslated = true);
   }
@@ -553,7 +551,8 @@ bool hasNegativePoint(List<Point<int>> points) {
 }
 
 class BoxPainter extends CustomPainter {
-  BoxPainter();
+  BoxPainter(this.inputText);
+  final RecognizedText inputText;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -583,8 +582,8 @@ class BoxPainter extends CustomPainter {
 }
 
 class TextListPainter extends CustomPainter {
-  TextListPainter(this.textList);
-  final List<String> textList;
+  TextListPainter(this.inputText);
+  final RecognizedText inputText;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -601,8 +600,8 @@ class TextListPainter extends CustomPainter {
 
           final TextPainter textPainter = TextPainter(
             text: TextSpan(
-              text: translatedTextList[
-                  counter++], //access the previously saved translated text list
+              //access the previously saved translated text list
+              text: translatedTextList[counter++],
               style: TextStyle(
                 fontSize: frameHeight, //initial text size
                 color: AppColor.kColorWhite,
@@ -622,7 +621,6 @@ class TextListPainter extends CustomPainter {
           canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
           canvas.rotate(findAngle(points[0], points[1]));
           canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
-
           //draw text before restoring canvas
           textPainter.paint(
               canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
@@ -633,6 +631,56 @@ class TextListPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(TextListPainter oldDelegate) =>
-      textList != oldDelegate.textList;
+  bool shouldRepaint(TextListPainter oldDelegate) => false;
+}
+
+class RomanizationPainter extends CustomPainter {
+  RomanizationPainter(this.inputText);
+  final RecognizedText inputText;
+
+  @override
+  Future<void> paint(ui.Canvas canvas, ui.Size size) async {
+    int counter = 0;
+
+    for (TextBlock block in inputText.blocks) {
+      for (TextLine line in block.lines) {
+        List<Point<int>> points = line.cornerPoints;
+
+        //get the size of the bounding box to adjust the text size
+        double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
+        double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
+
+        final TextPainter textPainter = TextPainter(
+          text: TextSpan(
+            //access the previously saved romanized text list
+            text: romanizedTextList[counter++],
+            style: TextStyle(
+              fontSize: frameHeight, //initial text size
+              color: AppColor.kColorWhite,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+          textScaleFactor: 1,
+        )..layout();
+
+        //if text size is still out of the bounds, decrease the text scale factor
+        while (textPainter.height >= frameHeight) {
+          textPainter.textScaleFactor -= 0.01;
+          textPainter.layout(maxWidth: frameWidth);
+        }
+
+        canvas.save(); //save canvas before rotating
+        canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
+        canvas.rotate(findAngle(points[0], points[1]));
+        canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
+        //draw text before restoring canvas
+        textPainter.paint(
+            canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
+        canvas.restore();
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

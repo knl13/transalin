@@ -118,12 +118,12 @@ class DownloadScreenState extends State<DownloadScreen> {
     doneSymbol = Icon(
       Icons.download_done_rounded,
       color: AppColor.kColorPeriDark,
-      size: AppGlobal.screenWidth * 0.084,
+      size: AppGlobal.screenWidth * 0.08,
     );
     downloadingSymbol = Icon(
       Icons.downloading_rounded,
       color: AppColor.kColorPeriLight,
-      size: AppGlobal.screenWidth * 0.084,
+      size: AppGlobal.screenWidth * 0.08,
     );
 
     textStylePeriLight = TextStyle(
