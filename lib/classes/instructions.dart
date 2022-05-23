@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:transalin/classes/instruction.dart';
 
 class Instructions {
-  static const translation = Instruction(
+  static const performance = Instruction(
       icon: Icons.wifi_off_rounded,
-      heading: 'Translation',
+      heading: 'Performance',
       text:
-          'The on-device translation displays the result as overlays. It uses the pre-saved models to provide offline services with relatively low-quality translation.');
+          'TranSalin displays translation as overlays. It uses the pre-saved models to provide offline services with relatively low-quality recognition and translation.');
 
   static const romanization = Instruction(
     icon: Icons.translate_rounded,
@@ -26,7 +26,7 @@ class Instructions {
           'The features operate on what text is shown on the screen. The toggle and romanize features help switch the display to access the recognized, translated, and romanized texts.');
 
   static const List<Instruction> instructions = [
-    translation,
+    performance,
     romanization,
     feature,
     interface

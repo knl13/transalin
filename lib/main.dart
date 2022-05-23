@@ -20,27 +20,27 @@ bool modelsAreDownloaded = false;
 
 //root of app where the first screen is determined (download or input screen)
 Future<void> main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); //ensure initialization of plugin services for availableCameras() function
+  //ensure initialization of plugin services for availableCameras() function
+  WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown
-  ]); //prevent orientation from rotating
+  ]); //prevent landscape orientation
 
-  final List<CameraDescription> cameras =
-      await availableCameras(); //get list of device's available cameras
-  AppGlobal.camera =
-      cameras.first; //save and use first camera from the list (back cam)
+  //get list of device's available cameras
+  final List<CameraDescription> cameras = await availableCameras();
+  //save and use first camera from the list (back cam)
+  AppGlobal.camera = cameras.first;
 
-  checkModels().then((_) => runApp(
-      const MyApp())); //check models before running the app to know what screen to show first
+  //check models before running the app to know what screen to show first
+  checkModels().then((_) => runApp(const MyApp()));
 }
 
 checkModels() async {
   modelManager = OnDeviceTranslatorModelManager();
 
-  isChineseEnglishDownloaded = await modelManager
-      .isModelDownloaded('zh'); //english model is included in any other models
+  //english model is included in any other models
+  isChineseEnglishDownloaded = await modelManager.isModelDownloaded('zh');
   isFilipinoDownloaded = await modelManager.isModelDownloaded('tl');
 
   isChineseEnglishDownloaded && isFilipinoDownloaded
@@ -63,8 +63,9 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme:
                 ThemeData(scaffoldBackgroundColor: AppColor.kColorPeriDarkest),
+            //go straight to input screen when models are already downloaded
             home: modelsAreDownloaded
-                ? const InputScreen() //go straight to input screen when models are already downloaded
+                ? const InputScreen()
                 : const DownloadScreen()));
   }
 }
@@ -78,16 +79,10 @@ class DownloadScreen extends StatefulWidget {
 }
 
 class DownloadScreenState extends State<DownloadScreen> {
-  Icon doneSymbol = const Icon(
-    Icons.download_done_rounded,
-    color: AppColor.kColorPeriDark,
-    size: 30,
-  );
-  Icon downloadingSymbol = const Icon(
-    Icons.downloading_rounded,
-    color: AppColor.kColorPeriLight,
-    size: 30,
-  );
+  late Icon doneSymbol;
+  late Icon downloadingSymbol;
+  late TextStyle textStylePeriLight;
+  late TextStyle textStylePeriDarkBold;
 
   @override
   void initState() {
@@ -117,8 +112,28 @@ class DownloadScreenState extends State<DownloadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    AppGlobal.screenWidth = MediaQuery.of(context).size.width;
-    AppGlobal.screenHeight = MediaQuery.of(context).size.height;
+    //save screen width and height before the app starts
+    AppGlobal.initSizeConfig(context);
+
+    doneSymbol = Icon(
+      Icons.download_done_rounded,
+      color: AppColor.kColorPeriDark,
+      size: AppGlobal.screenWidth * 0.084,
+    );
+    downloadingSymbol = Icon(
+      Icons.downloading_rounded,
+      color: AppColor.kColorPeriLight,
+      size: AppGlobal.screenWidth * 0.084,
+    );
+
+    textStylePeriLight = TextStyle(
+        color: AppColor.kColorPeriLight,
+        fontSize: AppGlobal.screenWidth * 0.039);
+
+    textStylePeriDarkBold = TextStyle(
+        color: AppColor.kColorPeriDark,
+        fontWeight: FontWeight.bold,
+        fontSize: AppGlobal.screenWidth * 0.039);
 
     return Scaffold(
       backgroundColor: AppColor.kColorPeriLightest,
@@ -127,12 +142,13 @@ class DownloadScreenState extends State<DownloadScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          //text guide that tells the models are being downloaded
-          const FittedBox(
-              child: Text(
-                  'Welcome! Let\'s first download\nthe translation language models.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColor.kColorPeriDark))),
+          //heading
+          Text(
+              'Welcome! Let\'s first download\nthe translation language models.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: AppColor.kColorPeriDark,
+                  fontSize: AppGlobal.screenWidth * 0.039)),
           SizedBox(height: AppGlobal.screenHeight * 0.1),
           //moving color circles
           SpinKitFadingGrid(
@@ -165,33 +181,33 @@ class DownloadScreenState extends State<DownloadScreen> {
                       !isChineseEnglishDownloaded
                           ? downloadingSymbol
                           : doneSymbol,
-                      const SizedBox(width: 10),
+                      SizedBox(width: AppGlobal.screenWidth * 0.028),
                       Text('中文 (Zhōngwén)',
                           style: !isChineseEnglishDownloaded
-                              ? AppGlobal.textStylePeriLight
-                              : AppGlobal.textStylePeriDarkBold)
+                              ? textStylePeriLight
+                              : textStylePeriDarkBold)
                     ]),
-                    const SizedBox(height: 10),
+                    SizedBox(height: AppGlobal.screenHeight * 0.014),
                     //English language
                     Row(mainAxisAlignment: MainAxisAlignment.start, children: [
                       !isChineseEnglishDownloaded
                           ? downloadingSymbol
                           : doneSymbol,
-                      const SizedBox(width: 10),
+                      SizedBox(width: AppGlobal.screenWidth * 0.028),
                       Text('English language',
                           style: !isChineseEnglishDownloaded
-                              ? AppGlobal.textStylePeriLight
-                              : AppGlobal.textStylePeriDarkBold)
+                              ? textStylePeriLight
+                              : textStylePeriDarkBold)
                     ]),
-                    const SizedBox(height: 10),
+                    SizedBox(height: AppGlobal.screenHeight * 0.014),
                     //Filipino language
                     Row(mainAxisAlignment: MainAxisAlignment.start, children: [
                       !isFilipinoDownloaded ? downloadingSymbol : doneSymbol,
-                      const SizedBox(width: 10),
+                      SizedBox(width: AppGlobal.screenWidth * 0.028),
                       Text('wikang Filipino',
                           style: !isFilipinoDownloaded
-                              ? AppGlobal.textStylePeriLight
-                              : AppGlobal.textStylePeriDarkBold)
+                              ? textStylePeriLight
+                              : textStylePeriDarkBold)
                     ]),
                   ]))
         ],

@@ -17,7 +17,8 @@ class LanguageSwitch extends StatelessWidget {
         onPressed: () {
           //deny language change when the recognizer and translator are still processing
           if (AppGlobal.inOutputScreen && !AppGlobal.hasTranslated) {
-            AppGlobal.denyLanguageChange();
+            AppGlobal.showToast(
+                'Already processing. Try\nchanging the language again later.');
           } else {
             //switch languages
             String tempLanguage = sourceLanguage;
@@ -25,7 +26,10 @@ class LanguageSwitch extends StatelessWidget {
             context.read<TargetLanguageChanger>().change(tempLanguage);
           }
         },
-        icon: const Icon(Icons.swap_horiz_rounded,
-            color: AppColor.kColorPeriLightest, size: 30));
+        icon: Icon(
+          Icons.swap_horiz_rounded,
+          color: AppColor.kColorPeriLightest,
+          size: AppGlobal.screenWidth * 0.084,
+        ));
   }
 }

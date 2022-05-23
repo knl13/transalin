@@ -13,28 +13,25 @@ abstract class AppGlobal {
   static bool inOutputScreen = false;
   static bool hasTranslated = false;
 
-  //toast for denying language change
-  static denyLanguageChange() => () async {
+  //for showing errors/confirmation
+  static showToast(String message) => () async {
         await Fluttertoast.cancel();
 
         Fluttertoast.showToast(
-            msg: 'Already processing. Try\nchanging the language again later.',
+            msg: message,
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.TOP,
-            fontSize: 10,
+            fontSize: AppGlobal.screenWidth * 0.028,
             backgroundColor: AppColor.kColorPeriDarkest70,
             textColor: AppColor.kColorWhite);
       }();
 
-  static const TextStyle textStylePeriLight =
-      TextStyle(color: AppColor.kColorPeriLight);
-  static const TextStyle textStylePeriDarkBold =
-      TextStyle(color: AppColor.kColorPeriDark, fontWeight: FontWeight.bold);
-  static const TextStyle textStylePeriDarkerBold16 = TextStyle(
-      color: AppColor.kColorPeriDarker,
-      fontWeight: FontWeight.bold,
-      fontSize: 16);
-
   static const Shadow shadowStyle =
       Shadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 0));
+
+  static void initSizeConfig(BuildContext context) {
+    //save screen width and height before the app starts
+    AppGlobal.screenWidth = MediaQuery.of(context).size.width;
+    AppGlobal.screenHeight = MediaQuery.of(context).size.height;
+  }
 }

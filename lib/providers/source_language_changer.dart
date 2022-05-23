@@ -3,11 +3,12 @@ import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:transalin/constants/app_language.dart';
 
 class SourceLanguageChanger extends ChangeNotifier {
-  String _language =
-      AppLanguage.english; //set initial source language to English
+  //set initial source language to English
+  String _language = AppLanguage.english;
   String get language => _language;
-  TranslateLanguage _tag =
-      AppLanguage.en; //set the corresponding TranslateLanguage type
+
+  //set the corresponding TranslateLanguage type
+  TranslateLanguage _tag = AppLanguage.enTag;
   TranslateLanguage get tag => _tag;
 
   change(String selectedLanguage) {

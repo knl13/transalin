@@ -8,9 +8,10 @@ import 'package:transalin/providers/source_language_changer.dart';
 import 'package:transalin/providers/target_language_changer.dart';
 
 class LanguageOptions extends StatefulWidget {
-  const LanguageOptions({Key? key, required this.index}) : super(key: key);
+  const LanguageOptions({Key? key, required this.isSourceLanguage})
+      : super(key: key);
 
-  final int index; //0: source language; 1: target language
+  final bool isSourceLanguage; //0: source language; 1: target language
 
   @override
   State<LanguageOptions> createState() => _LanguageOptionsState();
@@ -18,20 +19,21 @@ class LanguageOptions extends StatefulWidget {
 
 class _LanguageOptionsState extends State<LanguageOptions> {
   //update to chosen language from the popup menu
-  changeLanguage(int index, String selectedLanguage) {
+  changeLanguage(bool isSourceLanguage, String selectedLanguage) {
     //deny language change when the recognizer and translator are still processing
     if (AppGlobal.inOutputScreen && !AppGlobal.hasTranslated) {
-      AppGlobal.denyLanguageChange();
+      AppGlobal.showToast(
+          'Already processing. Try\nchanging the language again later.');
     } else {
-      return index == 0
+      return isSourceLanguage
           ? context.read<SourceLanguageChanger>().change(selectedLanguage)
           : context.read<TargetLanguageChanger>().change(selectedLanguage);
     }
   }
 
   //listeners for language display in the language bar
-  watchLanguage(int index) {
-    return index == 0
+  watchLanguage(bool isSourceLanguage) {
+    return isSourceLanguage
         ? context.watch<SourceLanguageChanger>().language
         : context.watch<TargetLanguageChanger>().language;
   }
@@ -40,10 +42,10 @@ class _LanguageOptionsState extends State<LanguageOptions> {
   Widget build(BuildContext context) {
     return PopupMenuButton<Language>(
         color: AppColor.kColorPeriDarkest,
-        constraints: const BoxConstraints(maxWidth: 155),
+        constraints: BoxConstraints(maxWidth: AppGlobal.screenWidth * 0.4),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(
-            Radius.circular(10),
+            Radius.circular(20),
           ),
         ),
         offset: const Offset(0, -185),
@@ -54,23 +56,26 @@ class _LanguageOptionsState extends State<LanguageOptions> {
                       child: Row(children: [
                         Image.asset(
                           lang.icon,
-                          height: 25,
-                          width: 25,
+                          height: AppGlobal.screenWidth * 0.07,
+                          width: AppGlobal.screenWidth * 0.07,
                           fit: BoxFit.fitWidth,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: AppGlobal.screenWidth * 0.028),
                         Text(lang.text,
-                            style: const TextStyle(
-                                color: AppColor.kColorPeriLightest))
+                            style: TextStyle(
+                                color: AppColor.kColorPeriLightest,
+                                fontSize: AppGlobal.screenWidth * 0.039)),
                       ])))
                   .toList()
             ],
         onSelected: (Language selectedLanguage) =>
-            changeLanguage(widget.index, selectedLanguage.text),
+            changeLanguage(widget.isSourceLanguage, selectedLanguage.text),
         child: Text(
-          watchLanguage(widget.index),
+          watchLanguage(widget.isSourceLanguage),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColor.kColorPeriLightest),
+          style: TextStyle(
+              color: AppColor.kColorPeriLightest,
+              fontSize: AppGlobal.screenWidth * 0.039),
         ));
   }
 }

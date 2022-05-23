@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:transalin/constants/app_color.dart';
+import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/widgets/language_options.dart';
 import 'package:transalin/widgets/language_switch.dart';
 
@@ -9,19 +10,14 @@ class LanguageBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height * 0.08,
-        margin: const EdgeInsets.only(top: 20),
-        // decoration: const BoxDecoration(
-        color: AppColor.kColorPeriDarkest, // borderRadius: BorderRadius.only(
-        // topLeft: Radius.circular(20),
-        // topRight: Radius.circular(20),
-        // )
-        // ),
+        width: AppGlobal.screenWidth,
+        height: AppGlobal.screenHeight * 0.08,
+        margin: EdgeInsets.only(top: AppGlobal.screenHeight * 0.03),
+        color: AppColor.kColorPeriDarkest,
         child: Row(children: const [
-          Expanded(child: LanguageOptions(index: 0)),
+          Expanded(child: LanguageOptions(isSourceLanguage: true)),
           LanguageSwitch(),
-          Expanded(child: LanguageOptions(index: 1)),
+          Expanded(child: LanguageOptions(isSourceLanguage: false)),
         ]));
   }
 }

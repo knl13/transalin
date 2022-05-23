@@ -7,13 +7,13 @@ abstract class AppLanguage {
   static const filipino = 'Filipino';
 
   //for translation
-  static const zh = TranslateLanguage.chinese;
-  static const en = TranslateLanguage.english;
-  static const tl = TranslateLanguage.tagalog;
+  static const zhTag = TranslateLanguage.chinese;
+  static const enTag = TranslateLanguage.english;
+  static const tlTag = TranslateLanguage.tagalog;
 
   static TranslateLanguage getTag(String language) {
-    if (language == AppLanguage.chinese) return AppLanguage.zh;
-    if (language == AppLanguage.english) return AppLanguage.en;
-    return AppLanguage.tl;
+    if (language == AppLanguage.chinese) return AppLanguage.zhTag;
+    if (language == AppLanguage.english) return AppLanguage.enTag;
+    return AppLanguage.tlTag;
   }
 }

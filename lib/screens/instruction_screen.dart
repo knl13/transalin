@@ -10,6 +10,10 @@ import 'package:transalin/screens/input_screen.dart';
 class InstructionScreen extends StatelessWidget {
   const InstructionScreen({super.key, required this.pop});
   final bool pop;
+  static TextStyle textStylePeriDarkerBold = TextStyle(
+      color: AppColor.kColorPeriDarker,
+      fontWeight: FontWeight.bold,
+      fontSize: AppGlobal.screenWidth * 0.0445);
 
   Widget buildInstruction(Instruction inst) => Container(
       width: AppGlobal.screenWidth * 0.6,
@@ -22,25 +26,29 @@ class InstructionScreen extends StatelessWidget {
       child: Column(children: [
         Row(children: [
           Container(
+              width: AppGlobal.screenWidth * 0.1,
               padding: const EdgeInsets.all(5),
               decoration: const BoxDecoration(
                   shape: BoxShape.circle, color: AppColor.kColorWhite),
-              child:
-                  Icon(inst.icon, size: 20, color: AppColor.kColorPeriLight)),
-          const SizedBox(width: 10),
-          FittedBox(
-            child: Text(
-              inst.heading,
-              style: const TextStyle(
-                  color: AppColor.kColorWhite, fontWeight: FontWeight.bold),
-            ),
+              child: Icon(inst.icon,
+                  size: AppGlobal.screenWidth * 0.055,
+                  color: AppColor.kColorPeriLight)),
+          SizedBox(width: AppGlobal.screenWidth * 0.028),
+          Text(
+            inst.heading,
+            style: TextStyle(
+                color: AppColor.kColorWhite,
+                fontWeight: FontWeight.bold,
+                fontSize: AppGlobal.screenWidth * 0.039),
           )
         ]),
-        const SizedBox(height: 10),
+        SizedBox(height: AppGlobal.screenHeight * 0.0145),
         Text(
           inst.text,
-          style:
-              const TextStyle(color: AppColor.kColorPeriLighter, fontSize: 8.5),
+          style: TextStyle(
+            color: AppColor.kColorPeriLighter,
+            fontSize: AppGlobal.screenWidth * 0.023,
+          ),
         )
       ]));
 
@@ -53,11 +61,11 @@ class InstructionScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           //heading
-          const FittedBox(
-              child: Text(
-                  'Yep, we\'re good to go!\nYou can use the app offline.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColor.kColorPeriDarker))),
+          Text('Yep, we\'re good to go!\nYou can use the app offline.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: AppColor.kColorPeriDarker,
+                  fontSize: AppGlobal.screenWidth * 0.039)),
           SizedBox(height: AppGlobal.screenHeight * 0.025),
           //thumbs up button to go to input/output screen
           OutlinedButton(
@@ -77,12 +85,12 @@ class InstructionScreen extends StatelessWidget {
                   width: AppGlobal.screenWidth * 0.5,
                   child: Lottie.asset('assets/lottie/thumb_up.json'))),
           SizedBox(height: AppGlobal.screenHeight * 0.025),
-          //guide how to use the app
+          //guide how to the app works
           Container(
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20, bottom: 10),
-              child: const Text('How to use TranSalin?',
-                  style: AppGlobal.textStylePeriDarkerBold16)),
+              child: Text('How to use TranSalin?',
+                  style: textStylePeriDarkerBold)),
           Container(
               width: AppGlobal.screenWidth,
               height: AppGlobal.screenWidth * 0.45,
@@ -98,14 +106,13 @@ class InstructionScreen extends StatelessWidget {
           SizedBox(height: AppGlobal.screenHeight * 0.05),
           //helper to know that the thumbs up button is clickable
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Text('Let\'s go! ',
-                style: AppGlobal.textStylePeriDarkerBold16),
+            Text('Let\'s go!', style: textStylePeriDarkerBold),
             Container(
-                padding: const EdgeInsets.only(top: 4.5),
-                child: const Text('Give a thumbs up to get started.',
+                padding: EdgeInsets.only(top: AppGlobal.screenHeight * 0.005),
+                child: Text(' Give a thumbs up to get started.',
                     style: TextStyle(
                       color: AppColor.kColorPeri,
-                      fontSize: 11,
+                      fontSize: AppGlobal.screenWidth * 0.0305,
                     )))
           ]),
         ],

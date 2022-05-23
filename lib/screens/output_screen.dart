@@ -16,7 +16,6 @@ import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:lpinyin/lpinyin.dart';
 import 'package:provider/provider.dart';
-import 'package:transalin/classes/features.dart';
 import 'package:transalin/constants/app_color.dart';
 import 'package:transalin/constants/app_global.dart';
 import 'package:transalin/constants/app_language.dart';
@@ -28,14 +27,14 @@ import 'package:transalin/widgets/language_bar.dart';
 //lists where the texts are saved
 List<String> translatedTextList = [];
 List<String> romanizedTextList = [];
-List<String> textDisplayList = [];
 
 //a screen that displays the result of translation
 class OutputScreen extends StatefulWidget {
-  const OutputScreen({Key? key, required this.index, required this.imageFile})
+  const OutputScreen(
+      {Key? key, required this.fromGallery, required this.imageFile})
       : super(key: key);
 
-  final int index;
+  final bool fromGallery;
   final XFile imageFile;
 
   @override
@@ -52,7 +51,6 @@ class OutputScreenState extends State<OutputScreen> {
 
   //for recognition and translation
   final textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
-  late OnDeviceTranslator translator;
 
   late TranslateLanguage langSourceTag;
   late TranslateLanguage langTargetTag;
@@ -88,12 +86,14 @@ class OutputScreenState extends State<OutputScreen> {
   @override
   void initState() {
     super.initState();
-    AppGlobal.inOutputScreen =
-        true; //to deny language change when the recognizer and translator are still processing
+    //to deny language change when the recognizer and translator are still processing
+    AppGlobal.inOutputScreen = true;
 
     appBar = AppBar(
-      title: const Text('TranSalin',
-          style: TextStyle(shadows: [AppGlobal.shadowStyle])),
+      title: Text('TranSalin',
+          style: TextStyle(
+              shadows: const [AppGlobal.shadowStyle],
+              fontSize: AppGlobal.screenWidth * 0.042)),
       centerTitle: true,
       backgroundColor: AppColor.kColorTransparent,
       elevation: 0,
@@ -102,13 +102,14 @@ class OutputScreenState extends State<OutputScreen> {
         IconButton(
             splashColor: AppColor.kColorPeriLight,
             splashRadius: 14,
-            icon: const Icon(Icons.help_outline_rounded,
-                size: 20,
+            icon: Icon(Icons.help_outline_rounded,
+                size: AppGlobal.screenWidth * 0.055,
                 color: AppColor.kColorWhite,
-                shadows: [AppGlobal.shadowStyle]),
+                shadows: const [AppGlobal.shadowStyle]),
             onPressed: () {
-              flutterTts
-                  .stop(); //stop TTS when the instruction screen is displayed
+              //stop TTS and toast display when the instruction screen is displayed
+              Fluttertoast.cancel();
+              flutterTts.stop();
 
               () async {
                 await Navigator.of(context).push(MaterialPageRoute(
@@ -120,10 +121,10 @@ class OutputScreenState extends State<OutputScreen> {
       leading: IconButton(
         splashColor: AppColor.kColorPeriLight,
         splashRadius: 14,
-        icon: const Icon(Icons.close_rounded,
-            size: 25,
+        icon: Icon(Icons.close_rounded,
+            size: AppGlobal.screenWidth * 0.07,
             color: AppColor.kColorWhite,
-            shadows: [AppGlobal.shadowStyle]),
+            shadows: const [AppGlobal.shadowStyle]),
         onPressed: () => Navigator.of(context).pop(),
       ),
     );
@@ -147,7 +148,7 @@ class OutputScreenState extends State<OutputScreen> {
     });
 
     flutterTts.setCancelHandler(() {
-      //this us called when the audio is stopped
+      //this is called when the audio is stopped
       if (mounted) {
         //hide the display that shows TTS is loading/playing
         setState(() {
@@ -162,23 +163,16 @@ class OutputScreenState extends State<OutputScreen> {
     displayImage = Image.file(filePath);
     recognizerImage = InputImage.fromFilePath(widget.imageFile.path);
 
-    () async {
-      //recognize text
-      inputText = await textRecognizer.processImage(recognizerImage);
-      if (!mounted) return;
-    }();
-
     translateText();
   }
 
   @override
   void dispose() {
-    AppGlobal.inOutputScreen =
-        false; //set to false to allow language change anytime in the input screen
+    //set to false to allow language change anytime in the input screen
+    AppGlobal.inOutputScreen = false;
     Fluttertoast.cancel();
     flutterTts.stop();
     textRecognizer.close();
-    translator.close();
     super.dispose();
   }
 
@@ -194,49 +188,51 @@ class OutputScreenState extends State<OutputScreen> {
     showOverlay = true;
     showRomanized = false;
     showStopSign = false;
-    withRomanization = langTargetTag == AppLanguage.zh;
+    withRomanization = langTargetTag == AppLanguage.zhTag;
     playAudio = false;
 
     recognizedText = '';
     translatedText = '';
+    romanizedText = '';
 
     translatedTextList.clear();
-
-    if (withRomanization) {
-      romanizedText = '';
-      romanizedTextList.clear();
-    }
+    romanizedTextList.clear();
   }
 
   translateText() async {
     clear();
 
+    //recognize text
+    inputText = await textRecognizer.processImage(recognizerImage);
+    if (!mounted) return;
+
     String recognized;
     String translated;
     String romanized;
 
-    //translate text depending on the source and target language
-    translator = OnDeviceTranslator(
-        sourceLanguage: langSourceTag, targetLanguage: langTargetTag);
-
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         recognized = line.text;
+
+        final OnDeviceTranslator translator;
+        translator = OnDeviceTranslator(
+            sourceLanguage: langSourceTag, targetLanguage: langTargetTag);
         translated = await translator.translateText(recognized);
+        translator.close();
 
         if (mounted) {
           setState(() {
             recognizedText += '$recognized ';
             translatedText += '$translated ';
-            translatedTextList
-                .add(translated); //get translated texts for the canvas display
 
+            //get translated texts for the canvas display
+            translatedTextList.add(translated);
             if (withRomanization) {
               romanized = PinyinHelper.getPinyinE(translated,
                   separator: " ", format: PinyinFormat.WITH_TONE_MARK);
               romanizedText += '$romanized ';
-              romanizedTextList
-                  .add(romanized); //get romanized texts for the canvas display
+              //get romanized texts for the canvas display
+              romanizedTextList.add(romanized);
             }
           });
         }
@@ -268,35 +264,38 @@ class OutputScreenState extends State<OutputScreen> {
       }
     }
 
+    double fabWidth = (AppGlobal.screenWidth * 0.15).toDouble();
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: appBar,
       floatingActionButton: Container(
           //button that shows the features
-          padding: EdgeInsets.only(bottom: (AppGlobal.screenHeight * 0.08)),
+          padding: EdgeInsets.only(bottom: AppGlobal.screenHeight * 0.08),
           alignment: Alignment.bottomRight,
           child: SpeedDial(
+            buttonSize: Size(fabWidth, fabWidth),
+            childrenButtonSize: Size(fabWidth, fabWidth),
             animatedIcon: AnimatedIcons.menu_close,
             backgroundColor: AppColor.kColorPeriDarkest,
             overlayColor: AppColor.kColorBlack,
             overlayOpacity: 0.3,
-            spacing: 3,
-            spaceBetweenChildren: 3,
+            spacing: AppGlobal.screenHeight * 0.005,
+            spaceBetweenChildren: AppGlobal.screenHeight * 0.005,
             openCloseDial: isDialOpen,
             closeManually: true,
             onPress: () => {
-              if (!AppGlobal
-                  .hasTranslated) //do not allow opening the button when translation is not yet ready
+              //do not allow opening the button when translation is not yet ready
+              if (!AppGlobal.hasTranslated)
                 {
                   isDialOpen.value = false,
                 }
+              //catcher for when there is no recognized text in the image
               else
                 {
-                  recognizedText ==
-                          '' //catcher for when there is no recognized text in the image
+                  recognizedText == ''
                       ? {
                           isDialOpen.value = false,
-                          showToast('No text detected.'),
+                          AppGlobal.showToast('No text detected.'),
                         }
                       : isDialOpen.value = true
                 }
@@ -304,8 +303,8 @@ class OutputScreenState extends State<OutputScreen> {
             children: [
               //toggle overlay visibility
               SpeedDialChild(
-                  child: Icon(Features.toggle.icon,
-                      color: AppColor.kColorPeriLightest),
+                  child: Icon(Icons.visibility_outlined,
+                      color: AppColor.kColorPeriLightest, size: fabWidth - 30),
                   backgroundColor: AppColor.kColorPeriDarker,
                   onTap: () {
                     if (mounted) {
@@ -314,8 +313,8 @@ class OutputScreenState extends State<OutputScreen> {
                   }),
               //change Chinese script
               SpeedDialChild(
-                  child: Icon(Features.change.icon,
-                      color: AppColor.kColorPeriLightest),
+                  child: Icon(Icons.translate,
+                      color: AppColor.kColorPeriLightest, size: fabWidth - 30),
                   backgroundColor: AppColor.kColorPeriDark,
                   onTap: () {
                     if (withRomanization) {
@@ -324,14 +323,14 @@ class OutputScreenState extends State<OutputScreen> {
                         setState(() => showRomanized = !showRomanized);
                       }
                     } else {
-                      showToast(
+                      AppGlobal.showToast(
                           'Not applicable. Target\nlanguage is not Chinese.');
                     }
                   }),
               //copy text
               SpeedDialChild(
-                  child: Icon(Features.copy.icon,
-                      color: AppColor.kColorPeriLightest),
+                  child: Icon(Icons.content_copy,
+                      color: AppColor.kColorPeriLightest, size: fabWidth - 30),
                   backgroundColor: AppColor.kColorPeri,
                   onTap: () {
                     if (showOverlay) {
@@ -348,54 +347,56 @@ class OutputScreenState extends State<OutputScreen> {
                       textLabel = 'Recognized';
                     }
 
-                    Clipboard.setData(ClipboardData(
-                            text: copiedText)) //put text to clipboard
+                    //copy text to clipboard
+                    Clipboard.setData(ClipboardData(text: copiedText))
                         .then((_) {
-                      return showToast('$textLabel text copied');
+                      return AppGlobal.showToast('$textLabel text copied');
                     });
                   }),
               //listen to text
               SpeedDialChild(
-                  child: Icon(Features.listen.icon,
-                      color: AppColor.kColorPeriLightest),
+                  child: Icon(Icons.hearing,
+                      color: AppColor.kColorPeriLightest, size: fabWidth - 30),
                   backgroundColor: AppColor.kColorPeriLight,
                   onTap: () {
-                    if (mounted) {
-                      setState(() => playAudio = true);
-                    } //to show loading sign while TTS is not yet ready
-                    () async {
-                      if (!showOverlay) {
-                        //determine what text is currently shown on the screen and set audio language and text
-                        flutterTts.setLanguage(speechSourceTag);
-                        await flutterTts.speak(recognizedText);
-                      } else {
-                        flutterTts.setLanguage(speechTargetTag);
-                        await flutterTts.speak(
-                            translatedText); //still the same with or without romanization
-                      }
-                    }();
+                    if (!playAudio) {
+                      if (mounted) {
+                        setState(() => playAudio = true);
+                      } //to show loading sign while TTS is not yet ready
+                      () async {
+                        if (!showOverlay) {
+                          //determine what text is currently shown on the screen and set audio language and text
+                          flutterTts.setLanguage(speechSourceTag);
+                          await flutterTts.speak(recognizedText);
+                        } else {
+                          //still the same with or without romanization
+                          flutterTts.setLanguage(speechTargetTag);
+                          await flutterTts.speak(translatedText);
+                        }
+                      }();
+                    }
                   }),
               //save image
               SpeedDialChild(
-                  child: Icon(Features.save.icon,
-                      color: AppColor.kColorPeriLightest),
+                  child: Icon(Icons.save_alt,
+                      color: AppColor.kColorPeriLightest, size: fabWidth - 30),
                   backgroundColor: AppColor.kColorPeriLighter,
                   onTap: () {
                     () async {
+                      //determine what text is currently shown on the screen
                       if (!showOverlay) {
-                        //determine what text is currently shown on the screen
                         textLabel = 'Original';
-                        await GallerySaver.saveImage(widget.imageFile
-                            .path); //save original image when there is no overlay
+                        //save original image when there is no overlay
+                        await GallerySaver.saveImage(widget.imageFile.path);
                       } else {
                         showRomanized
                             ? textLabel = 'Romanized'
                             : textLabel = 'Translated';
 
-                        RenderRepaintBoundary boundary = globalKey
-                                .currentContext
-                                ?.findRenderObject()
-                            as RenderRepaintBoundary; //save the current state of the canvas
+                        //save the current state of the canvas
+                        RenderRepaintBoundary boundary =
+                            globalKey.currentContext?.findRenderObject()
+                                as RenderRepaintBoundary;
                         ui.Image image = await boundary.toImage();
 
                         ByteData? byteData = await image.toByteData(
@@ -406,15 +407,15 @@ class OutputScreenState extends State<OutputScreen> {
                       }
                       if (!mounted) return;
 
-                      showToast('$textLabel image saved');
+                      AppGlobal.showToast('$textLabel image saved');
                     }();
                   }),
             ],
           )),
       body: Stack(children: [
         SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.92,
+            width: AppGlobal.screenWidth,
+            height: AppGlobal.screenHeight * 0.92,
             //image/canvas display
             child: ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -428,22 +429,26 @@ class OutputScreenState extends State<OutputScreen> {
                           ? Stack(children: [
                               imageDisplay(),
                               Center(
-                                child: circularProgressWidget(),
+                                child: SizedBox(
+                                    width: AppGlobal.screenWidth * 0.07,
+                                    height: AppGlobal.screenWidth * 0.07,
+                                    child: circularProgressWidget()),
                               )
                             ])
                           : InteractiveViewer(
-                              boundaryMargin: const EdgeInsets.all(double
-                                  .infinity), //allows to zoom in and out the image
+                              //allows to zoom in and out the image
+                              boundaryMargin:
+                                  const EdgeInsets.all(double.infinity),
                               maxScale: 4,
                               minScale: 0.5,
                               //if show overlay is false, hide custom painters
                               child: !showOverlay
                                   ? imageDisplay()
-                                  : widget.index == 0
-                                      ? Center(child: overlayDisplay())
-                                      : Align(
+                                  : !widget.fromGallery
+                                      ? Align(
                                           alignment: Alignment.topCenter,
-                                          child: overlayDisplay())),
+                                          child: overlayDisplay())
+                                      : Center(child: overlayDisplay())),
                       //if TTS is not loading or playing, show nothing
                       !playAudio
                           ? Container()
@@ -457,9 +462,9 @@ class OutputScreenState extends State<OutputScreen> {
   }
 
   Widget imageDisplay() {
-    return widget.index == 0
-        ? Center(child: displayImage)
-        : Align(alignment: Alignment.topCenter, child: displayImage);
+    return !widget.fromGallery
+        ? Align(alignment: Alignment.topCenter, child: displayImage)
+        : Center(child: displayImage);
   }
 
   FittedBox overlayDisplay() {
@@ -490,9 +495,9 @@ class OutputScreenState extends State<OutputScreen> {
 
   getSpeechTag(TranslateLanguage langTag) {
     //return language tag for TTS
-    String tag = langTag == AppLanguage.en
+    String tag = langTag == AppLanguage.enTag
         ? 'en-US'
-        : langTag == AppLanguage.tl
+        : langTag == AppLanguage.tlTag
             ? 'fil-PH'
             : 'zh-CN';
 
@@ -506,50 +511,48 @@ class OutputScreenState extends State<OutputScreen> {
       //used for displaying signs that TTS is loading/playing
       alignment: Alignment.topRight,
       child: Container(
-          width: 50,
-          height: 50,
+          width: AppGlobal.screenWidth * 0.13,
+          height: AppGlobal.screenWidth * 0.13,
           alignment: Alignment.center,
           margin:
               EdgeInsets.only(top: appBar.preferredSize.height + 20, right: 20),
-          padding: const EdgeInsets.all(10),
           decoration: const BoxDecoration(
               shape: BoxShape.circle, color: AppColor.kColorWhite70),
-          child: SizedBox(width: 15, height: 15, child: child)));
+          child: child));
 
-  Widget loadingSign() => ttsSign(circularProgressWidget());
+  Widget loadingSign() => ttsSign(SizedBox(
+      width: AppGlobal.screenWidth * 0.045,
+      height: AppGlobal.screenWidth * 0.045,
+      child: circularProgressWidget()));
 
-  Widget stopSign() => ttsSign(IconButton(
-      icon: const Icon(Icons.stop_rounded),
-      iconSize: 30,
-      color: AppColor.kColorPeriLight,
-      onPressed: () => flutterTts.stop()));
-
-  Future showToast(String message) async {
-    //display toast to confirm feature results
-    await Fluttertoast.cancel();
-
-    Fluttertoast.showToast(
-        msg: message,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.TOP,
-        fontSize: 10,
-        backgroundColor: AppColor.kColorPeriDarkest70,
-        textColor: AppColor.kColorWhite);
-  }
+  Widget stopSign() => ttsSign(Center(
+      child: IconButton(
+          icon: const Icon(Icons.stop_rounded),
+          iconSize: AppGlobal.screenWidth * 0.084,
+          color: AppColor.kColorPeriLight,
+          onPressed: () => flutterTts.stop())));
 }
 
 double findAngle(Point<int> p1, Point<int> p2) {
+  //find angle between bottom left and bottom right corner points
   final double deltaY = p2.y.toDouble() - p1.y.toDouble();
   final double deltaX = p2.x.toDouble() - p1.x.toDouble();
   final double result = atan2(deltaY, deltaX);
-  debugPrint('weh $result');
   return (result < 0) ? (6.283 + result) : result;
+}
+
+bool hasNegativePoint(List<Point<int>> points) {
+  //to catch error when a cornerpoint of an overlay exceeds the canvas
+  bool point0 = points[0].x < 0 || points[0].y < 0;
+  bool point1 = points[1].x < 0 || points[1].y < 0;
+  bool point2 = points[2].x < 0 || points[2].y < 0;
+  bool point3 = points[3].x < 0 || points[3].y < 0;
+  return point0 || point1 || point2 || point3;
 }
 
 class BoxPainter extends CustomPainter {
   BoxPainter(this.inputText);
   final RecognizedText inputText;
-  int counter = 0;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
@@ -561,16 +564,17 @@ class BoxPainter extends CustomPainter {
       for (TextLine line in block.lines) {
         List<Point<int>> points = line.cornerPoints;
 
-        final Path rectangle = Path(); //draw the bounding box of each line
-        rectangle.moveTo(points[0].x.toDouble(), points[0].y.toDouble());
-        rectangle.lineTo(points[1].x.toDouble(), points[1].y.toDouble());
-        rectangle.lineTo(points[2].x.toDouble(), points[2].y.toDouble());
-        rectangle.lineTo(points[3].x.toDouble(), points[3].y.toDouble());
+        if (!hasNegativePoint(points)) {
+          final Path rectangle = Path(); //draw the bounding box of each line
+          rectangle.moveTo(points[0].x.toDouble(), points[0].y.toDouble());
+          rectangle.lineTo(points[1].x.toDouble(), points[1].y.toDouble());
+          rectangle.lineTo(points[2].x.toDouble(), points[2].y.toDouble());
+          rectangle.lineTo(points[3].x.toDouble(), points[3].y.toDouble());
 
-        canvas.drawPath(rectangle, paint);
+          canvas.drawPath(rectangle, paint);
+        }
       }
     }
-    counter = 0;
   }
 
   @override
@@ -580,46 +584,49 @@ class BoxPainter extends CustomPainter {
 class TranslationPainter extends CustomPainter {
   TranslationPainter(this.inputText);
   final RecognizedText inputText;
-  int counter = 0;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
+    int counter = 0;
+
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         List<Point<int>> points = line.cornerPoints;
 
-        //get the size of the bounding box to adjust the text size
-        double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
-        double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
+        if (!hasNegativePoint(points)) {
+          //get the size of the bounding box to adjust the text size
+          double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
+          double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
 
-        final TextPainter textPainter = TextPainter(
-          text: TextSpan(
-            text: translatedTextList[
-                counter++], //access the previously saved translated text list
-            style: TextStyle(
-              fontSize: frameHeight, //initial text size
-              color: AppColor.kColorWhite,
+          final TextPainter textPainter = TextPainter(
+            text: TextSpan(
+              text: translatedTextList[
+                  counter++], //access the previously saved translated text list
+              style: TextStyle(
+                fontSize: frameHeight, //initial text size
+                color: AppColor.kColorWhite,
+              ),
             ),
-          ),
-          textDirection: TextDirection.ltr,
-          textScaleFactor: 1,
-        )..layout();
+            textDirection: TextDirection.ltr,
+            textScaleFactor: 1,
+          )..layout();
 
-        //if text size is still out of the bounds, decrease the text scale factor
-        while (textPainter.height >= frameHeight) {
-          textPainter.textScaleFactor -= 0.01;
-          textPainter.layout(maxWidth: frameWidth);
+          //if text size is still out of the bounds, decrease the text scale factor
+          while (textPainter.height >= frameHeight) {
+            textPainter.textScaleFactor -= 0.01;
+            textPainter.layout(maxWidth: frameWidth);
+          }
+
+          canvas.save(); //save canvas before rotating
+          canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
+          canvas.rotate(findAngle(points[0], points[1]));
+          canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
+
+          //draw text before restoring canvas
+          textPainter.paint(
+              canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
+          canvas.restore();
         }
-
-        canvas.save(); //save canvas before rotating
-        canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
-        //find angle between bottom left and bottom right points
-        canvas.rotate(findAngle(points[0], points[1]));
-        canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
-        //draw text before restoring canvas
-        textPainter.paint(
-            canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
-        canvas.restore();
       }
     }
     counter = 0;
@@ -632,10 +639,11 @@ class TranslationPainter extends CustomPainter {
 class RomanizationPainter extends CustomPainter {
   RomanizationPainter(this.inputText);
   final RecognizedText inputText;
-  int counter = 0;
 
   @override
   Future<void> paint(ui.Canvas canvas, ui.Size size) async {
+    int counter = 0;
+
     for (TextBlock block in inputText.blocks) {
       for (TextLine line in block.lines) {
         List<Point<int>> points = line.cornerPoints;
@@ -665,7 +673,6 @@ class RomanizationPainter extends CustomPainter {
 
         canvas.save(); //save canvas before rotating
         canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
-        //find angle between bottom left and bottom right points
         canvas.rotate(findAngle(points[0], points[1]));
         canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
         //draw text before restoring canvas
