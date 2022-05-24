@@ -177,13 +177,15 @@ class InputScreenState extends State<InputScreen> {
                                 side: const BorderSide(
                                     width: 3.0, color: AppColor.kColorWhite),
                                 shape: const CircleBorder(),
-                                padding: const EdgeInsets.all(1.0),
+                                padding: EdgeInsets.all(
+                                    AppGlobal.screenWidth * 0.005),
                               ),
-                              child: Icon(
+                              child: Center(
+                                  child: Icon(
                                 Icons.circle_rounded,
-                                size: AppGlobal.screenWidth * 0.15,
+                                size: AppGlobal.screenWidth * 0.1485,
                                 color: AppColor.kColorWhite,
-                              ),
+                              )),
                               onPressed: () async {
                                 try {
                                   await _initializeControllerFuture;

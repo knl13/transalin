@@ -48,7 +48,7 @@ class _LanguageOptionsState extends State<LanguageOptions> {
             Radius.circular(20),
           ),
         ),
-        offset: const Offset(0, -185),
+        offset: const Offset(0, 0),
         itemBuilder: (context) => [
               ...Languages.languages
                   .map((Language lang) => PopupMenuItem<Language>(
@@ -64,7 +64,8 @@ class _LanguageOptionsState extends State<LanguageOptions> {
                         Text(lang.text,
                             style: TextStyle(
                                 color: AppColor.kColorPeriLightest,
-                                fontSize: AppGlobal.screenWidth * 0.039)),
+                                fontSize: ((AppGlobal.screenHeight * 0.02) *
+                                    (AppGlobal.screenWidth * 0.0027)))),
                       ])))
                   .toList()
             ],
@@ -75,7 +76,8 @@ class _LanguageOptionsState extends State<LanguageOptions> {
           textAlign: TextAlign.center,
           style: TextStyle(
               color: AppColor.kColorPeriLightest,
-              fontSize: AppGlobal.screenWidth * 0.039),
+              fontSize: ((AppGlobal.screenHeight * 0.02) *
+                  (AppGlobal.screenWidth * 0.0027))),
         ));
   }
 }

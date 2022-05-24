@@ -47,7 +47,8 @@ class InstructionScreen extends StatelessWidget {
           inst.text,
           style: TextStyle(
             color: AppColor.kColorPeriLighter,
-            fontSize: AppGlobal.screenWidth * 0.023,
+            fontSize: ((AppGlobal.screenHeight * 0.02) *
+                (AppGlobal.screenWidth * 0.0017)),
           ),
         )
       ]));
