@@ -646,37 +646,39 @@ class RomanizationPainter extends CustomPainter {
       for (TextLine line in block.lines) {
         List<Point<int>> points = line.cornerPoints;
 
-        //get the size of the bounding box to adjust the text size
-        double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
-        double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
+        if (!hasNegativePoint(points)) {
+          //get the size of the bounding box to adjust the text size
+          double frameWidth = points[1].x.toDouble() - points[0].x.toDouble();
+          double frameHeight = points[3].y.toDouble() - points[0].y.toDouble();
 
-        final TextPainter textPainter = TextPainter(
-          text: TextSpan(
-            //access the previously saved romanized text list
-            text: romanizedTextList[counter++],
-            style: TextStyle(
-              fontSize: frameHeight, //initial text size
-              color: AppColor.kColorWhite,
+          final TextPainter textPainter = TextPainter(
+            text: TextSpan(
+              //access the previously saved romanized text list
+              text: romanizedTextList[counter++],
+              style: TextStyle(
+                fontSize: frameHeight, //initial text size
+                color: AppColor.kColorWhite,
+              ),
             ),
-          ),
-          textDirection: TextDirection.ltr,
-          textScaleFactor: 1,
-        )..layout();
+            textDirection: TextDirection.ltr,
+            textScaleFactor: 1,
+          )..layout();
 
-        //if text size is still out of the bounds, decrease the text scale factor
-        while (textPainter.height >= frameHeight) {
-          textPainter.textScaleFactor -= 0.01;
-          textPainter.layout(maxWidth: frameWidth);
+          //if text size is still out of the bounds, decrease the text scale factor
+          while (textPainter.height >= frameHeight) {
+            textPainter.textScaleFactor -= 0.01;
+            textPainter.layout(maxWidth: frameWidth);
+          }
+
+          canvas.save(); //save canvas before rotating
+          canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
+          canvas.rotate(findAngle(points[0], points[1]));
+          canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
+          //draw text before restoring canvas
+          textPainter.paint(
+              canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
+          canvas.restore();
         }
-
-        canvas.save(); //save canvas before rotating
-        canvas.translate(points[0].x.toDouble(), points[0].y.toDouble());
-        canvas.rotate(findAngle(points[0], points[1]));
-        canvas.translate(-points[0].x.toDouble(), -points[0].y.toDouble());
-        //draw text before restoring canvas
-        textPainter.paint(
-            canvas, Offset(points[0].x.toDouble(), points[0].y.toDouble()));
-        canvas.restore();
       }
     }
   }
